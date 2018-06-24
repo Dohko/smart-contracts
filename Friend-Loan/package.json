@@ -1,0 +1,22 @@
+{
+  "name": "Friend-Loan",
+  "version": "1.0.0",
+  "description": "",
+  "main": "truffle-config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "truffle test",
+    "cleantest": "rm -Rf build/* && truffle compile && truffle migrate && truffle test"
+  },
+  "keywords": [],
+  "author": "Morgan Fitussi <mfitussi@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "chai-bignumber": "^2.0.2",
+    "openzeppelin-solidity": "1.10.0"
+  }
+}

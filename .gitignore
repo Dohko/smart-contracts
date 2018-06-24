@@ -3,3 +3,5 @@ node_modules
 
 # Generated files
 build
+Converter/package-lock.json
+Friend-Loan/package-lock.json
