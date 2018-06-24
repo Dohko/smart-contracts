@@ -3,8 +3,7 @@ pragma solidity ^0.4.24;
 import 'openzeppelin-solidity/contracts/token/ERC20/BasicToken.sol';
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 
-contract LoanBurnableCoin is BasicToken, Ownable {
-	// Textmate bundle fix => }
+contract LoanBurnableCoin is BasicToken, Ownable { // Textmate bundle fix => }
 	
 	event Burn(address indexed burner, uint256 value);
 	
