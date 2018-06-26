@@ -1,10 +1,11 @@
 pragma solidity ^0.4.24;
 
 import 'openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
+import 'openzeppelin-solidity/contracts/ownership/Whitelist.sol';
 import './LoanBurnableToken.sol';
 import "./FriendLoanLib.sol";
 
-contract FriendLoanCoin is MintableToken, LoanBurnableCoin {	// Textmate bundle fix => }
+contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textmate bundle fix => }
 
   string public name = "Friend Loan Coin";
   string public symbol = "FLC";
@@ -33,6 +34,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin {	// Textmate bundle 
 		uint8 _nbPayments,
 		uint8 _paymentType
 	)
+		onlyWhitelisted
 		public
 		returns (bool)
 	{		

@@ -107,6 +107,22 @@ contract('FriendLoanCoin', function(accounts) {
 			assert.equal(currentMaxNbPayments, newMaxNbPayments);
 		});
 		
+		it('should prevent user not on whitelist to create a loan', async function () {
+			try {
+				await this.token.createLoan(this.loanTotalAmount, this.loanMaxInterestRate, this.loanNbPayments, this.loanPaymentType, {from: this.borrower});
+			}
+			catch (error) {}
+			finally {
+				const loansCount = await this.token.loansCount()
+				assert.equal(loansCount, 0);
+			}
+		});
+		
+		it('adds a user to whitelist', async function () {
+			await this.token.addAddressToWhitelist(this.borrower, {from: this.owner});
+			const isBorrowerOnWhitelist = await this.token.whitelist(this.borrower);
+			assert.isTrue(isBorrowerOnWhitelist);
+		});
 		
 		it('should create a loan', async function () {
 			const receipt = await this.token.createLoan(this.loanTotalAmount, this.loanMaxInterestRate, this.loanNbPayments, this.loanPaymentType, {from: this.borrower});
