@@ -74,6 +74,7 @@ contract('FriendLoanCoin', function(accounts) {
 	describe('loan behaviour', async function () {
 	  before(async function() {
 			this.token = await FriendLoanCoin.deployed();
+			await this.token.setMaxNbPayments(36);
 			this.owner = accounts[0];
 			this.otherAccount = accounts[1];
 			
@@ -124,22 +125,55 @@ contract('FriendLoanCoin', function(accounts) {
 			assert.isTrue(isBorrowerOnWhitelist);
 		});
 		
-		it('should create a loan', async function () {
-			const receipt = await this.token.createLoan(this.loanTotalAmount, this.loanMaxInterestRate, this.loanNbPayments, this.loanPaymentType, {from: this.borrower});
-			// See https://ethereum.stackexchange.com/questions/33192/how-do-i-know-which-transaction-generated-a-contract-in-factory-pattern?rq=1
-			const logLoanCreated = receipt.logs[0];
-			const borrower = logLoanCreated.args.borrower;
-			borrower.should.equal(this.borrower);
+		it('should update the max number of payments', async function() {
+			await this.token.setMaxNbPayments(2);
+			var maxNbPayments = await this.token.maxNbPayments();
+			assert.equal(maxNbPayments, 2);
+
+			await this.token.setMaxNbPayments(55);
+			maxNbPayments = await this.token.maxNbPayments();
+			assert.equal(maxNbPayments, 55);
 		});
 		
-		it('should increment counter', async function () {
-			const oldLoansCount = await this.token.loansCount()
-			await this.token.createLoan(this.loanTotalAmount, this.loanMaxInterestRate, this.loanNbPayments, this.loanPaymentType, {from: this.borrower});
-			await this.token.createLoan(this.loanTotalAmount, this.loanMaxInterestRate, this.loanNbPayments, this.loanPaymentType, {from: this.borrower});
-			const loansCount = await this.token.loansCount()
-			assert.equal(loansCount, Number(oldLoansCount) + 2);
+		describe('should not create a loan when', async function () {
+		  after(async function() {
+				await this.token.setMaxNbPayments(36);
+			});
+			
+			async function hasLoansCountBeenIncreased(token, totalAmount, maxInterestRate, nbPayments, paymentType, from) {
+				const loansCount = await token.loansCount();
+				try {
+					await token.createLoan(totalAmount, maxInterestRate, nbPayments, paymentType, { from });
+				}
+				catch (error) {}
+				finally {
+					const currentLoansCount = await token.loansCount()
+					return parseInt(currentLoansCount) > parseInt(loansCount);
+				}
+			}
+			
+			it('max number of payments is zero', async function() {
+				await this.token.setMaxNbPayments(0);
+				const hasIncreased = await hasLoansCountBeenIncreased(this.token, this.loanTotalAmount, this.loanMaxInterestRate, this.loanNbPayments, this.loanPaymentType, this.borrower)
+				assert.isFalse(hasIncreased);
+			});
+		
+			it('amount is zero', async function() {
+				const hasIncreased = await hasLoansCountBeenIncreased(this.token, 0, this.loanMaxInterestRate, this.loanNbPayments, this.loanPaymentType, this.borrower)
+				assert.isFalse(hasIncreased);
+			});
+			
+			it('number of payments is zero', async function() {
+				const hasIncreased = await hasLoansCountBeenIncreased(this.token, this.loanTotalAmount, this.loanMaxInterestRate, 0, this.loanPaymentType, this.borrower)
+				assert.isFalse(hasIncreased);
+			});
+			
+			it('payment type is invalid', async function() {
+				const hasIncreased = await hasLoansCountBeenIncreased(this.token, this.loanTotalAmount, this.loanMaxInterestRate, this.loanNbPayments, 10, this.borrower)
+				assert.isFalse(hasIncreased);
+			});
 		});
+		
+		
 	});
-	
-	
 });

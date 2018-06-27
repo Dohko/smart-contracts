@@ -5,7 +5,7 @@ import "../../contracts/FriendLoanLib.sol";
 contract LoanCreatorMock { // Textmate bundle fix => }
 	using FriendLoanLib for FriendLoanLib.Loan;
 	using FriendLoanLib for FriendLoanLib.Data;
-	
+
 	FriendLoanLib.Data private data;
 
   function createLoan(
@@ -19,5 +19,5 @@ contract LoanCreatorMock { // Textmate bundle fix => }
 	{
 		data.createLoan(_index, _amount, _maxInterestRate, _nbPayments, _paymentType);
   }
-	
+
 }

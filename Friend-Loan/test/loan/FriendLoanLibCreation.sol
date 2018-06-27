@@ -1,40 +1,10 @@
 pragma solidity ^0.4.24;
 
-import "truffle/Assert.sol";  
-import "../contracts/FriendLoanLib.sol";
-import "./utils/ThrowProxy.sol";
-import "./mocks/LoanCreatorMock.sol";
+import "./TestFriendLoanLibBase.sol";
 
-contract TestFriendLoanLib { // Textmate bundle fix => }
-	using FriendLoanLib for FriendLoanLib.Loan;
-	using FriendLoanLib for FriendLoanLib.Data;
-
-	FriendLoanLib.Data private data;
-
-	uint8 private index = 1;
+contract FriendLoanLibCreation is TestFriendLoanLibBase { // Textmate bundle fix => }
 	
-	function createLoan(
-		uint256 _index,
-		uint256 _amount,
-    uint8 _maxInterestRate,
-    uint8 _nbPayments,
-    uint8 _paymentType
-	)
-		private
-		returns(bool)
-	{
-		LoanCreatorMock thrower = new LoanCreatorMock();
-		ThrowProxy throwProxy = new ThrowProxy(address(thrower)); //set Thrower as the contract to forward requests to. The target.
-
-    // Act
-    LoanCreatorMock(address(throwProxy)).createLoan(_index, _amount, _maxInterestRate, _nbPayments, _paymentType); //prime the proxy.
-    // execute the call that is supposed to throw.
-    // success will be false if it threw. success will be true if it didn't.
-    // make sure you send enough gas for your contract method.
-    bool success = throwProxy.execute.gas(200000)();
-		return success;
-	}
-	
+/**
   function testCouldNotCreateLoanWhenZeroMaxNbPayments() public {
     // Arrange
     uint256 _amount = 10;
@@ -134,5 +104,5 @@ contract TestFriendLoanLib { // Textmate bundle fix => }
     // Assert
     Assert.equal(data.loans.length, index - 1, "The loans should be append to data");
   }
-
+*/
 }
