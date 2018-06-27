@@ -73,10 +73,7 @@ contract('FriendLoanCoin', function(accounts) {
 	
 	describe('loan', async function () {
 	  before(async function() {
-			this.token = await FriendLoanCoin.deployed();
 			await this.token.setMaxNbPayments(36);
-			this.owner = accounts[0];
-			this.otherAccount = accounts[1];
 			
 			this.loanTotalAmount = 100;
 			this.loanMaxInterestRate = 10;
@@ -191,7 +188,6 @@ contract('FriendLoanCoin', function(accounts) {
 				const borrower = logLoanCreated.args.borrower;
 				borrower.should.equal(this.borrower);
 			});
-
 		});
 		
 	});
