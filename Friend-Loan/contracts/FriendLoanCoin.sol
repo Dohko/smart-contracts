@@ -19,6 +19,11 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
   uint256 public counter = 0;
 	
 	event LoanCreated(uint256 indexed id, address indexed borrower, uint256 amount, uint8 maxInterestRate, uint8 nbPayments, uint8 paymentType);
+	event GuarantorAdded(uint256 indexed loanKey, address indexed guarantor, uint256 guarantee);
+	event GuarantorRemoved(uint256 indexed loanKey, address indexed guarantor);
+	event GuarantorReplaced(uint256 indexed loanKey, address indexed oldGuarantor, address indexed newGuarantor);
+	event LoanStarted(uint256 indexed loanKey);
+	event LenderAdded(uint256 indexed loanKey, address indexed guarantor, uint256 lend, uint8 interestRate);
 	
 	/**
 	 * @dev The Loan creator
@@ -62,11 +67,138 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	}
 	
 	/**
-	 * @dev get the number of loans in contract
+	 * @dev gives the number of loans in contract
 	 * @return the number of loans
 	 */
 	function loansCount() public view returns(uint256) {
-		return data.loans.length;
+		return data.loansCount;
+	}
+	
+
+	/**
+	 * @dev starts the loan
+   * @param _loanKey The loan's key.
+	 * @return true if the loan has started
+	 */
+	function startLoan(uint256 _loanKey) onlyWhitelisted public returns(bool) {
+		data.startLoan(_loanKey);
+		return true;
+	}
+	
+	/**
+	 * @dev checks if a specified guarantor is engaged by the loan
+   * @param _loanKey The loan's key.
+   * @param _guarantor The guarantor to check
+	 * @return true if the guarantor is engaged
+	 */
+	function isGuarantorEngaged(
+		uint256 _loanKey,
+		address _guarantor
+	)
+		public
+		view
+		returns (bool)
+	{
+		return data.isGuarantorEngaged(_loanKey, _guarantor);
+	}
+
+	/**
+	 * @dev gives the number of guarantors for a loan
+   * @param _loanKey The loan's key.
+	 * @return the number of guarantors
+	 */
+	function guarantorsCount(uint256 _loanKey) public view returns(uint256) {
+		return data.guarantorsCount(_loanKey);
+	}
+	
+	/**
+	 * @dev adds a guarantor for a loan
+   * @param _loanKey The loan's key.
+   * @param _amount The guarantee's amount
+	 * @return true if the guarantor has been added
+	 */
+	function appendGuarantor(
+		uint256 _loanKey,
+		uint256 _amount
+	)
+		onlyWhitelisted
+		public
+		returns (bool)
+	{
+		data.appendGuarantor(_loanKey, _amount);
+		return true;
+	}
+	
+	/**
+	 * @dev removes a guarantor for a loan
+   * @param _loanKey The loan's key.
+	 * @return true if the guarantor has been removed
+	 */
+	function removeGuarantor(
+		uint256 _loanKey
+	)
+		onlyWhitelisted
+		public
+		returns (bool)
+	{
+		data.removeGuarantor(_loanKey, msg.sender);
+		return true;
+	}
+	
+	/**
+	 * @dev only owner - forces remove a guarantor for a loan
+   * @param _loanKey The loan's key.
+	 * @param _guarantor the guarantor to remove
+	 * @return true if the guarantor has been removed
+	 */
+	function forceRemoveGuarantor(
+		uint256 _loanKey,
+		address _guarantor
+	)
+		onlyOwner
+		public
+		returns (bool)
+	{
+		data.removeGuarantor(_loanKey, _guarantor);
+		return true;
+	}
+	
+	/**
+	 * @dev replaces a loan's guarantor
+   * @param _loanKey The loan's key.
+   * @param _oldGuarantor The guarantor to replace by
+	 * @return true if the guarantor has been replaced
+	 */
+	function replaceGuarantor(
+		uint256 _loanKey,
+		address _oldGuarantor
+	)
+		onlyWhitelisted
+		public
+		returns (bool)
+	{
+		data.replaceGuarantor(_loanKey, _oldGuarantor, msg.sender);
+		return true;
+	}
+	
+	/**
+	 * @dev adds a lender for a loan
+   * @param _loanKey The loan's key.
+   * @param _amount The lend's amount
+   * @param _interestRate The interest's rate
+	 * @return true if the lender has been added
+	 */
+	function appendLender(
+		uint256 _loanKey,
+		uint256 _amount,
+		uint8 _interestRate
+	)
+		onlyWhitelisted
+		public
+		returns (bool)
+	{
+		data.appendLender(_loanKey, _amount, _interestRate);
+		return true;
 	}
 	
 }
