@@ -135,13 +135,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _loanKey The loan's key.
 	 * @return true if the guarantor has been removed
 	 */
-	function removeGuarantor(
-		uint256 _loanKey
-	)
-		onlyWhitelisted
-		public
-		returns (bool)
-	{
+	function removeGuarantor(uint256 _loanKey) onlyWhitelisted public returns (bool) {
 		data.removeGuarantor(_loanKey, msg.sender);
 		return true;
 	}
@@ -207,12 +201,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _loanKey The loan's key.
 	 * @return true if the lender has been removed
 	 */
-	function removeLender(
-		uint256 _loanKey
-	)
-		public
-		returns (bool)
-	{
+	function removeLender(uint256 _loanKey) public returns (bool) {
 		data.removeLender(_loanKey);
 		return true;
 	}
