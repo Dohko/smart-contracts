@@ -49,6 +49,7 @@ library FriendLoanLib {
 
 		uint256 lendAmount;
 		mapping (address => Lender) proposedLenders;
+		mapping (address => Lender) acceptedLenders;
 		uint256 lendersCount;
 	}
 	
