@@ -23,7 +23,8 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	event GuarantorRemoved(uint256 indexed loanKey, address indexed guarantor);
 	event GuarantorReplaced(uint256 indexed loanKey, address indexed oldGuarantor, address indexed newGuarantor);
 	event LoanStarted(uint256 indexed loanKey);
-	event LenderAdded(uint256 indexed loanKey, address indexed guarantor, uint256 lend, uint8 interestRate);
+	event LenderAdded(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
+	event LenderRemoved(uint256 indexed loanKey, address indexed lender);
 	
 	/**
 	 * @dev The Loan creator
@@ -198,6 +199,23 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		returns (bool)
 	{
 		data.appendLender(_loanKey, _amount, _interestRate);
+		return true;
+	}
+	
+	/**
+	 * @dev removes a lender for the proposed lenders list
+   * @param self The storage data.
+   * @param _loanKey The loan's key.
+	 * @return true if the lender has been removed
+	 */
+	function removeLender(
+		Data storage self,
+		uint256 _loanKey
+	)
+		public
+		returns (bool)
+	{
+		data.removeLender(_loanKey);
 		return true;
 	}
 	

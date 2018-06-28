@@ -58,7 +58,8 @@ library FriendLoanLib {
 	event GuarantorRemoved(uint256 indexed loanKey, address indexed guarantor);
 	event GuarantorReplaced(uint256 indexed loanKey, address indexed oldGuarantor, address indexed newGuarantor);
 	event LoanStarted(uint256 indexed loanKey);
-	event LenderAdded(uint256 indexed loanKey, address indexed guarantor, uint256 lend, uint8 interestRate);
+	event LenderAdded(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
+	event LenderRemoved(uint256 indexed loanKey, address indexed lender);
 	
 	/**
 	 * @dev The Loan creator
@@ -308,7 +309,7 @@ library FriendLoanLib {
 	}
 	
 	/**
-	 * @dev adds a lender for a loan
+	 * @dev adds a lender to the proposed list
    * @param self The storage data.
    * @param _loanKey The loan's key.
    * @param _amount The lend's amount
@@ -324,32 +325,52 @@ library FriendLoanLib {
 		public
 		returns (bool)
 	{
+		require(_amount > 0);
     require(self.loans[_loanKey].created == true);
     require(self.loans[_loanKey].loanStarted == false);
     require(self.loans[_loanKey].borrower != msg.sender);
     require(self.loans[_loanKey].maxInterestRate >= _interestRate);
-		require(_amount > 0);
+		require(self.loans[_loanKey].totalAmount >= _amount);
+		require(self.loans[_loanKey].proposedLenders[msg.sender].created == false);
 		
-		uint256 _totalAmount = self.loans[_loanKey].totalAmount;
-		uint256 _lendAmount = self.loans[_loanKey].lendAmount;
-
-		if(_lendAmount.add(_amount) > _totalAmount) {
-			_amount = _totalAmount.sub(_lendAmount);
-		}
-		_lendAmount += _amount;
-		
-		if(self.loans[_loanKey].proposedLenders[msg.sender].created == true) {
-			uint256 _lenderAmount = self.loans[_loanKey].proposedLenders[msg.sender].amount;
-			_lenderAmount = _lenderAmount.add(_amount);
-			self.loans[_loanKey].proposedLenders[msg.sender].amount = _lenderAmount;
-		}
-		else {
-			self.loans[_loanKey].proposedLenders[msg.sender] = Lender({lender: msg.sender, amount: _amount, interestRate: _interestRate, created: true});
-		}
+		self.loans[_loanKey].proposedLenders[msg.sender] = Lender({lender: msg.sender, amount: _amount, interestRate: _interestRate, created: true});
 		
 		emit LenderAdded(_loanKey, msg.sender, _amount, _interestRate);
 		
 		return true;
 	}
+	
+	/**
+	 * @dev removes a lender for the proposed lenders list
+   * @param self The storage data.
+   * @param _loanKey The loan's key.
+	 * @return true if the lender has been removed
+	 */
+	function removeLender(
+		Data storage self,
+		uint256 _loanKey
+	)
+		internal
+		returns (bool)
+	{
+    require(self.loans[_loanKey].created == true);
+    require(self.loans[_loanKey].loanStarted == false);
+    require(self.loans[_loanKey].borrower != msg.sender);
+    require(self.loans[_loanKey].proposedLenders[msg.sender].created == true);
+
+		if(self.loans[_loanKey].acceptedLenders[msg.sender].created == true) {
+			self.loans[_loanKey].acceptedLenders[msg.sender].amount = 0;
+			self.loans[_loanKey].acceptedLenders[msg.sender].created = false;
+			self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.sub(self.loans[_loanKey].proposedLenders[msg.sender].amount);
+			self.loans[_loanKey].lendersCount--;
+		}
+		self.loans[_loanKey].proposedLenders[msg.sender].amount = 0;
+		self.loans[_loanKey].proposedLenders[msg.sender].created = false;
+		
+		emit LenderRemoved(_loanKey, msg.sender);
+		
+		return true;
+	}
+	
 
 }
