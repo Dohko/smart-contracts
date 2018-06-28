@@ -11,7 +11,6 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
   string public symbol = "FLC";
   uint8 public decimals = 2;
 	
-	using FriendLoanLib for FriendLoanLib.Loan;
 	using FriendLoanLib for FriendLoanLib.Data;
 	// our storage data
 	FriendLoanLib.Data data;
@@ -205,5 +204,26 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		data.removeLender(_loanKey);
 		return true;
 	}
+	
+	/**
+	 * @dev gives the list of proposed lenders for a loan
+   * @param _loanKey The loan's key.
+	 * @return the lenders addresses, amounts and interest rates
+	 */
+	function lendersList(uint256 _loanKey) public view returns (address[], uint256[], uint8[]) {
+		FriendLoanLib.Lender[] memory lenders = data.lendersList(_loanKey);
+		address[] memory addresses = new address[](lenders.length);
+		uint256[] memory amounts = new uint256[](lenders.length);
+		uint8[] memory interestRates = new uint8[](lenders.length);
+		
+		for(uint256 i = 0; i < lenders.length; i++) {
+			FriendLoanLib.Lender memory lender = lenders[i];
+			addresses[i] = lender.lender;
+			amounts[i] = lender.amount;
+			interestRates[i] = lender.interestRate;
+		}
+		return (addresses, amounts, interestRates);
+	}
+	
 	
 }

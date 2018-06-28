@@ -8,6 +8,7 @@ library FriendLoanLib {
 	
 	struct Lender {
     bool created;
+		uint256 index;
 		address lender;
     uint256 amount;
     uint8 interestRate;
@@ -48,7 +49,11 @@ library FriendLoanLib {
 		uint256 guarantorsCount;
 
 		uint256 lendAmount;
+		
 		mapping (address => Lender) proposedLenders;
+		address[] proposedLendersKeys;
+		uint256 proposedLendersSize;
+		
 		mapping (address => Lender) acceptedLenders;
 		uint256 lendersCount;
 	}
@@ -101,7 +106,9 @@ library FriendLoanLib {
 			guaranteeAmount: 0,
 			guarantorsCount: 0,
 			lendersCount: 0,
-			lendAmount: 0
+			lendAmount: 0,
+			proposedLendersKeys: new address[](0),
+			proposedLendersSize: 0
 		});
 		self.loans[_key] = loan;
 		self.loansCount++;
@@ -242,8 +249,7 @@ library FriendLoanLib {
 		
 		_guaranteeAmount = _guaranteeAmount.sub(_guarantorAmount);
 		self.loans[_loanKey].guaranteeAmount = _guaranteeAmount;
-		self.loans[_loanKey].guarantors[_guarantor].engaged = false;
-		self.loans[_loanKey].guarantors[_guarantor].amount = 0;
+		delete self.loans[_loanKey].guarantors[_guarantor];
 		self.loans[_loanKey].guarantorsCount--;
 		
 		assert(self.loans[_loanKey].guaranteeAmount >= 0);
@@ -276,8 +282,7 @@ library FriendLoanLib {
 		uint256 _newGuarantorAmount = self.loans[_loanKey].guarantors[_newGuarantor].amount;
 		_newGuarantorAmount = _newGuarantorAmount.add(_oldGuarantorAmount);
 		
-		self.loans[_loanKey].guarantors[_oldGuarantor].engaged = false;
-		self.loans[_loanKey].guarantors[_oldGuarantor].amount = 0;
+		delete self.loans[_loanKey].guarantors[_oldGuarantor];
 
 		self.loans[_loanKey].guarantors[_newGuarantor] = Guarantor({guarantor: _newGuarantor, amount: _newGuarantorAmount, engaged: true});
 
@@ -333,7 +338,10 @@ library FriendLoanLib {
 		require(self.loans[_loanKey].totalAmount >= _amount);
 		require(self.loans[_loanKey].proposedLenders[msg.sender].created == false);
 		
-		self.loans[_loanKey].proposedLenders[msg.sender] = Lender({lender: msg.sender, amount: _amount, interestRate: _interestRate, created: true});
+		self.loans[_loanKey].proposedLenders[msg.sender] = Lender({index: 0, lender: msg.sender, amount: _amount, interestRate: _interestRate, created: true});
+		uint256 newIndex = self.loans[_loanKey].proposedLendersKeys.push(msg.sender);
+		self.loans[_loanKey].proposedLenders[msg.sender].index = newIndex;
+		self.loans[_loanKey].proposedLendersSize++;
 		
 		emit LenderAdded(_loanKey, msg.sender, _amount, _interestRate);
 		
@@ -359,17 +367,43 @@ library FriendLoanLib {
     require(self.loans[_loanKey].proposedLenders[msg.sender].created == true);
 
 		if(self.loans[_loanKey].acceptedLenders[msg.sender].created == true) {
-			self.loans[_loanKey].acceptedLenders[msg.sender].amount = 0;
-			self.loans[_loanKey].acceptedLenders[msg.sender].created = false;
 			self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.sub(self.loans[_loanKey].proposedLenders[msg.sender].amount);
 			self.loans[_loanKey].lendersCount--;
+			delete self.loans[_loanKey].acceptedLenders[msg.sender];
 		}
-		self.loans[_loanKey].proposedLenders[msg.sender].amount = 0;
-		self.loans[_loanKey].proposedLenders[msg.sender].created = false;
+		uint256 proposedLenderIndex = self.loans[_loanKey].proposedLenders[msg.sender].index;
+		delete self.loans[_loanKey].proposedLenders[msg.sender];
+		delete self.loans[_loanKey].proposedLendersKeys[proposedLenderIndex];
+		self.loans[_loanKey].proposedLendersSize--;
 		
 		emit LenderRemoved(_loanKey, msg.sender);
 		
 		return true;
+	}
+	
+	/**
+	 * @dev gives the list of proposed lenders for a loan
+   * @param self The storage data.
+   * @param _loanKey The loan's key.
+	 * @return the list of proposed lenders
+	 */
+	function lendersList(
+		Data storage self,
+		uint256 _loanKey
+	)
+		internal
+		view
+		returns (Lender[])
+	{
+    require(self.loans[_loanKey].created == true);
+		Lender[] memory lenders = new Lender[](self.loans[_loanKey].proposedLendersSize);
+		
+		for(uint256 i = 0; i < self.loans[_loanKey].proposedLendersSize; i++) {
+			address lenderKey = self.loans[_loanKey].proposedLendersKeys[i];
+			Lender memory lender = self.loans[_loanKey].proposedLenders[lenderKey];
+			lenders[i] = lender;
+		}
+		return lenders;
 	}
 	
 
