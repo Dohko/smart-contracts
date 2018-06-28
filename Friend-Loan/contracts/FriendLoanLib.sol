@@ -347,10 +347,6 @@ library FriendLoanLib {
 			self.loans[_loanKey].proposedLenders[msg.sender] = Lender({lender: msg.sender, amount: _amount, interestRate: _interestRate, created: true});
 		}
 		
-		self.loans[_loanKey].lendAmount = _lendAmount;
-		self.loans[_loanKey].lendersCount++;
-
-		assert(self.loans[_loanKey].totalAmount >= self.loans[_loanKey].guaranteeAmount);
 		emit LenderAdded(_loanKey, msg.sender, _amount, _interestRate);
 		
 		return true;
