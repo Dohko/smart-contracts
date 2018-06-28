@@ -7,7 +7,7 @@ library FriendLoanLib {
 	using SafeMath for uint; // Textmate bundle fix => }
 	
 	struct Lender {
-    bool engaged;
+    bool created;
 		address lender;
     uint256 amount;
     uint8 interestRate;
@@ -48,7 +48,7 @@ library FriendLoanLib {
 		uint256 guarantorsCount;
 
 		uint256 lendAmount;
-		mapping (address => Lender) lenders;
+		mapping (address => Lender) proposedLenders;
 		uint256 lendersCount;
 	}
 	
@@ -337,13 +337,13 @@ library FriendLoanLib {
 		}
 		_lendAmount += _amount;
 		
-		if(self.loans[_loanKey].lenders[msg.sender].engaged == true) {
-			uint256 _lenderAmount = self.loans[_loanKey].lenders[msg.sender].amount;
+		if(self.loans[_loanKey].proposedLenders[msg.sender].created == true) {
+			uint256 _lenderAmount = self.loans[_loanKey].proposedLenders[msg.sender].amount;
 			_lenderAmount = _lenderAmount.add(_amount);
-			self.loans[_loanKey].lenders[msg.sender].amount = _lenderAmount;
+			self.loans[_loanKey].proposedLenders[msg.sender].amount = _lenderAmount;
 		}
 		else {
-			self.loans[_loanKey].lenders[msg.sender] = Lender({lender: msg.sender, amount: _amount, interestRate: _interestRate, engaged: true});
+			self.loans[_loanKey].proposedLenders[msg.sender] = Lender({lender: msg.sender, amount: _amount, interestRate: _interestRate, created: true});
 		}
 		
 		self.loans[_loanKey].lendAmount = _lendAmount;
