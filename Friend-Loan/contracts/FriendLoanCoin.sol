@@ -204,12 +204,10 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	
 	/**
 	 * @dev removes a lender for the proposed lenders list
-   * @param self The storage data.
    * @param _loanKey The loan's key.
 	 * @return true if the lender has been removed
 	 */
 	function removeLender(
-		Data storage self,
 		uint256 _loanKey
 	)
 		public
