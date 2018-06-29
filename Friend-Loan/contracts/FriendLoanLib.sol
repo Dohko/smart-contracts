@@ -55,7 +55,8 @@ library FriendLoanLib {
 		uint256 proposedLendersSize;
 		
 		mapping (address => Lender) acceptedLenders;
-		uint256 lendersCount;
+		address[] acceptedLendersKeys;
+		uint256 acceptedLendersSize;
 	}
 	
 	event LoanCreated(uint256 indexed id, address indexed borrower, uint256 amount, uint8 maxInterestRate, uint8 nbPayments, uint8 paymentType);
@@ -105,7 +106,8 @@ library FriendLoanLib {
 			paymentType: FriendLoanLib.PaymentType(_paymentType),
 			guaranteeAmount: 0,
 			guarantorsCount: 0,
-			lendersCount: 0,
+			acceptedLendersSize: 0,
+			acceptedLendersKeys: new address[](0),
 			lendAmount: 0,
 			proposedLendersKeys: new address[](0),
 			proposedLendersSize: 0
@@ -170,7 +172,7 @@ library FriendLoanLib {
 		require(self.loans[_loanKey].totalAmount > 0 && self.loans[_loanKey].guaranteeAmount > 0 && self.loans[_loanKey].lendAmount > 0);
     require(self.loans[_loanKey].totalAmount == self.loans[_loanKey].guaranteeAmount);
 		require(self.loans[_loanKey].totalAmount == self.loans[_loanKey].lendAmount);
-		require(self.loans[_loanKey].guarantorsCount > 0 && self.loans[_loanKey].lendersCount > 0);
+		require(self.loans[_loanKey].guarantorsCount > 0 && self.loans[_loanKey].acceptedLendersSize > 0);
 		require(self.loans[_loanKey].borrower == msg.sender);
 		
 		self.loans[_loanKey].loanStarted = true;
@@ -368,7 +370,7 @@ library FriendLoanLib {
 
 		if(self.loans[_loanKey].acceptedLenders[msg.sender].created == true) {
 			self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.sub(self.loans[_loanKey].proposedLenders[msg.sender].amount);
-			self.loans[_loanKey].lendersCount--;
+			self.loans[_loanKey].acceptedLendersSize--;
 			delete self.loans[_loanKey].acceptedLenders[msg.sender];
 		}
 		uint256 proposedLenderIndex = self.loans[_loanKey].proposedLenders[msg.sender].index;
@@ -405,6 +407,44 @@ library FriendLoanLib {
 		}
 		return lenders;
 	}
-	
 
+	/**
+	 * @dev accepts a lender from the proposed lender list
+   * @param self The storage data.
+   * @param _loanKey The loan's key.
+   * @param _lenderAddress The lender's address.
+	 * @return true if the lender has been accepted and the lend's amount
+	 */
+	function acceptLender(
+		Data storage self,
+		uint256 _loanKey,
+		address _lenderAddress
+	)
+		internal
+		returns (bool, uint256)
+	{
+    require(self.loans[_loanKey].created == true);
+    require(self.loans[_loanKey].loanStarted == false);
+    require(self.loans[_loanKey].borrower == msg.sender);
+		require(self.loans[_loanKey].guaranteeAmount == self.loans[_loanKey].totalAmount);
+		require(self.loans[_loanKey].lendAmount < self.loans[_loanKey].totalAmount);
+    require(self.loans[_loanKey].proposedLenders[_lenderAddress].created == true);
+    require(self.loans[_loanKey].proposedLenders[_lenderAddress].amount > 0);
+    require(self.loans[_loanKey].acceptedLenders[_lenderAddress].created == false);
+		
+		uint256 _amount = self.loans[_loanKey].proposedLenders[_lenderAddress].amount;
+		if(self.loans[_loanKey].lendAmount.add(_amount) > self.loans[_loanKey].totalAmount) {
+			_amount = self.loans[_loanKey].totalAmount.sub(self.loans[_loanKey].lendAmount);
+			self.loans[_loanKey].proposedLenders[_lenderAddress].amount = _amount;
+		}
+		
+		self.loans[_loanKey].acceptedLenders[_lenderAddress] = Lender({index: 0, lender: _lenderAddress, amount: _amount, interestRate: self.loans[_loanKey].proposedLenders[_lenderAddress].interestRate, created: true});
+		uint256 newIndex = self.loans[_loanKey].acceptedLendersKeys.push(_lenderAddress);
+		self.loans[_loanKey].acceptedLenders[_lenderAddress].index = newIndex;
+		self.loans[_loanKey].acceptedLendersSize++;
+		self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.sub(_amount);
+
+		return (true, _amount);
+	}
+	
 }
