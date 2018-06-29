@@ -198,7 +198,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	}
 	
 	/**
-	 * @dev removes a lender for the proposed lenders list
+	 * @dev removes a lender for the pending lenders list
    * @param _loanKey The loan's key.
 	 * @return true if the lender has been removed
 	 */
@@ -208,7 +208,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	}
 	
 	/**
-	 * @dev gives the list of proposed lenders for a loan
+	 * @dev gives the list of pending lenders for a loan
    * @param _loanKey The loan's key.
 	 * @return the lenders addresses, amounts and interest rates
 	 */
@@ -228,7 +228,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	}
 	
 	/**
-	 * @dev approves a lender from the proposed lender list
+	 * @dev approves a lender from the pending lender list
    * @param _loanKey The loan's key.
    * @param _lenderAddress The lender's address.
 	 * @return true if the lender has been approved and the lend's amount

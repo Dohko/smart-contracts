@@ -50,9 +50,9 @@ library FriendLoanLib {
 
 		uint256 lendAmount;
 		
-		mapping (address => Lender) proposedLenders;
-		address[] proposedLendersKeys;
-		uint256 proposedLendersSize;
+		mapping (address => Lender) pendingLenders;
+		address[] pendingLendersKeys;
+		uint256 pendingLendersSize;
 		
 		mapping (address => Lender) approvedLenders;
 		address[] approvedLendersKeys;
@@ -112,8 +112,8 @@ library FriendLoanLib {
 			approvedLendersSize: 0,
 			approvedLendersKeys: new address[](0),
 			lendAmount: 0,
-			proposedLendersKeys: new address[](0),
-			proposedLendersSize: 0
+			pendingLendersKeys: new address[](0),
+			pendingLendersSize: 0
 		});
 		self.loans[_key] = loan;
 		self.loansCount++;
@@ -319,7 +319,7 @@ library FriendLoanLib {
 	}
 	
 	/**
-	 * @dev adds a lender to the proposed list
+	 * @dev adds a lender to the pending list
    * @param self The storage data.
    * @param _loanKey The loan's key.
    * @param _amount The lend's amount
@@ -340,16 +340,16 @@ library FriendLoanLib {
     require(self.loans[_loanKey].loanStarted == false);
     require(self.loans[_loanKey].borrower != msg.sender);
     require(self.loans[_loanKey].maxInterestRate >= _interestRate);
-		require(self.loans[_loanKey].proposedLenders[msg.sender].created == false);
+		require(self.loans[_loanKey].pendingLenders[msg.sender].created == false);
 		
 		if(_amount > self.loans[_loanKey].totalAmount) {
 			_amount = self.loans[_loanKey].totalAmount;
 		}
 		
-		self.loans[_loanKey].proposedLenders[msg.sender] = Lender({index: 0, lender: msg.sender, amount: _amount, interestRate: _interestRate, created: true});
-		uint256 newIndex = self.loans[_loanKey].proposedLendersKeys.push(msg.sender);
-		self.loans[_loanKey].proposedLenders[msg.sender].index = newIndex;
-		self.loans[_loanKey].proposedLendersSize++;
+		self.loans[_loanKey].pendingLenders[msg.sender] = Lender({index: 0, lender: msg.sender, amount: _amount, interestRate: _interestRate, created: true});
+		uint256 newIndex = self.loans[_loanKey].pendingLendersKeys.push(msg.sender);
+		self.loans[_loanKey].pendingLenders[msg.sender].index = newIndex;
+		self.loans[_loanKey].pendingLendersSize++;
 		
 		emit LenderAdded(_loanKey, msg.sender, _amount, _interestRate);
 		
@@ -357,7 +357,7 @@ library FriendLoanLib {
 	}
 	
 	/**
-	 * @dev removes a lender for the proposed lenders list
+	 * @dev removes a lender for the pending lenders list
    * @param self The storage data.
    * @param _loanKey The loan's key.
 	 * @return true if the lender has been removed
@@ -372,17 +372,17 @@ library FriendLoanLib {
     require(self.loans[_loanKey].created == true);
     require(self.loans[_loanKey].loanStarted == false);
     require(self.loans[_loanKey].borrower != msg.sender);
-    require(self.loans[_loanKey].proposedLenders[msg.sender].created == true);
+    require(self.loans[_loanKey].pendingLenders[msg.sender].created == true);
 
 		if(self.loans[_loanKey].approvedLenders[msg.sender].created == true) {
-			self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.sub(self.loans[_loanKey].proposedLenders[msg.sender].amount);
+			self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.sub(self.loans[_loanKey].pendingLenders[msg.sender].amount);
 			self.loans[_loanKey].approvedLendersSize--;
 			delete self.loans[_loanKey].approvedLenders[msg.sender];
 		}
-		uint256 proposedLenderIndex = self.loans[_loanKey].proposedLenders[msg.sender].index;
-		delete self.loans[_loanKey].proposedLenders[msg.sender];
-		delete self.loans[_loanKey].proposedLendersKeys[proposedLenderIndex];
-		self.loans[_loanKey].proposedLendersSize--;
+		uint256 pendingLenderIndex = self.loans[_loanKey].pendingLenders[msg.sender].index;
+		delete self.loans[_loanKey].pendingLenders[msg.sender];
+		delete self.loans[_loanKey].pendingLendersKeys[pendingLenderIndex];
+		self.loans[_loanKey].pendingLendersSize--;
 		
 		emit LenderRemoved(_loanKey, msg.sender);
 		
@@ -390,10 +390,10 @@ library FriendLoanLib {
 	}
 	
 	/**
-	 * @dev gives the list of proposed lenders for a loan
+	 * @dev gives the list of pending lenders for a loan
    * @param self The storage data.
    * @param _loanKey The loan's key.
-	 * @return the list of proposed lenders
+	 * @return the list of pending lenders
 	 */
 	function lendersList(
 		Data storage self,
@@ -404,18 +404,18 @@ library FriendLoanLib {
 		returns (Lender[])
 	{
     require(self.loans[_loanKey].created == true);
-		Lender[] memory lenders = new Lender[](self.loans[_loanKey].proposedLendersSize);
+		Lender[] memory lenders = new Lender[](self.loans[_loanKey].pendingLendersSize);
 		
-		for(uint256 i = 0; i < self.loans[_loanKey].proposedLendersSize; i++) {
-			address lenderKey = self.loans[_loanKey].proposedLendersKeys[i];
-			Lender memory lender = self.loans[_loanKey].proposedLenders[lenderKey];
+		for(uint256 i = 0; i < self.loans[_loanKey].pendingLendersSize; i++) {
+			address lenderKey = self.loans[_loanKey].pendingLendersKeys[i];
+			Lender memory lender = self.loans[_loanKey].pendingLenders[lenderKey];
 			lenders[i] = lender;
 		}
 		return lenders;
 	}
 
 	/**
-	 * @dev approves a lender from the proposed lender list
+	 * @dev approves a lender from the pending lender list
    * @param self The storage data.
    * @param _loanKey The loan's key.
    * @param _lenderAddress The lender's address.
@@ -434,15 +434,15 @@ library FriendLoanLib {
     require(self.loans[_loanKey].borrower == msg.sender);
 		require(self.loans[_loanKey].guaranteeAmount == self.loans[_loanKey].totalAmount);
 		require(self.loans[_loanKey].lendAmount < self.loans[_loanKey].totalAmount);
-    require(self.loans[_loanKey].proposedLenders[_lenderAddress].created == true);
-    require(self.loans[_loanKey].proposedLenders[_lenderAddress].amount > 0);
+    require(self.loans[_loanKey].pendingLenders[_lenderAddress].created == true);
+    require(self.loans[_loanKey].pendingLenders[_lenderAddress].amount > 0);
     require(self.loans[_loanKey].approvedLenders[_lenderAddress].created == false);
 		
-		uint256 _amount = self.loans[_loanKey].proposedLenders[_lenderAddress].amount;
-		uint8 _interestRate = self.loans[_loanKey].proposedLenders[_lenderAddress].interestRate;
+		uint256 _amount = self.loans[_loanKey].pendingLenders[_lenderAddress].amount;
+		uint8 _interestRate = self.loans[_loanKey].pendingLenders[_lenderAddress].interestRate;
 		if(self.loans[_loanKey].lendAmount.add(_amount) > self.loans[_loanKey].totalAmount) {
 			_amount = self.loans[_loanKey].totalAmount.sub(self.loans[_loanKey].lendAmount);
-			self.loans[_loanKey].proposedLenders[_lenderAddress].amount = _amount;
+			self.loans[_loanKey].pendingLenders[_lenderAddress].amount = _amount;
 		}
 
 		self.loans[_loanKey].approvedLenders[_lenderAddress] = Lender({index: 0, lender: _lenderAddress, amount: _amount, interestRate: _interestRate, created: true});
@@ -474,13 +474,13 @@ library FriendLoanLib {
     require(self.loans[_loanKey].created == true);
     require(self.loans[_loanKey].loanStarted == false);
     require(self.loans[_loanKey].borrower == msg.sender);
-    require(self.loans[_loanKey].proposedLenders[_lenderAddress].created == true);
+    require(self.loans[_loanKey].pendingLenders[_lenderAddress].created == true);
     require(self.loans[_loanKey].approvedLenders[_lenderAddress].created == true);
 		require(self.loans[_loanKey].lendAmount > 0);
 		require(self.loans[_loanKey].approvedLenders[_lenderAddress].amount > 0);
 		require(self.loans[_loanKey].lendAmount >= self.loans[_loanKey].approvedLenders[_lenderAddress].amount);
 		
-		uint256 _amount = self.loans[_loanKey].proposedLenders[_lenderAddress].amount;
+		uint256 _amount = self.loans[_loanKey].pendingLenders[_lenderAddress].amount;
 		uint256 _lenderIndex = self.loans[_loanKey].approvedLenders[_lenderAddress].index;
 
 		delete self.loans[_loanKey].approvedLenders[_lenderAddress];
