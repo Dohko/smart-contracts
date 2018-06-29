@@ -24,7 +24,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	event LoanStarted(uint256 indexed loanKey);
 	event LenderAdded(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
 	event LenderRemoved(uint256 indexed loanKey, address indexed lender);
-	event LenderAccepted(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
+	event LenderApproved(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
 	event LenderDisapproved(uint256 indexed loanKey, address indexed lender, uint256 totalLendAmount, uint256 lendAmount);
 	
 	/**
@@ -228,12 +228,12 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	}
 	
 	/**
-	 * @dev accepts a lender from the proposed lender list
+	 * @dev approves a lender from the proposed lender list
    * @param _loanKey The loan's key.
    * @param _lenderAddress The lender's address.
-	 * @return true if the lender has been accepted and the lend's amount
+	 * @return true if the lender has been approved and the lend's amount
 	 */
-	function acceptLender(
+	function approveLender(
 		uint256 _loanKey,
 		address _lenderAddress
 	)
@@ -241,15 +241,15 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		public
 		returns (bool, uint256)
 	{
-		(bool _success, uint256 _lendAmount) = data.acceptLender(_loanKey, _lenderAddress);
+		(bool _success, uint256 _lendAmount) = data.approveLender(_loanKey, _lenderAddress);
 		return (_success, _lendAmount);
 	}
 	
 	/**
-	 * @dev removes an approved lender from the accepted lender list
+	 * @dev removes an approved lender from the approved lender list
    * @param _loanKey The loan's key.
    * @param _lenderAddress The lender's address.
-	 * @return true if the lender has been removed from the accepted lender list and the lend's amount
+	 * @return true if the lender has been removed from the approved lender list and the lend's amount
 	 */
 	function removeApprovedLender(
 		uint256 _loanKey,
@@ -259,7 +259,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		public
 		returns (bool, uint256)
 	{
-		(bool _success, uint256 _lendAmount) = data.acceptLender(_loanKey, _lenderAddress);
+		(bool _success, uint256 _lendAmount) = data.removeApprovedLender(_loanKey, _lenderAddress);
 		return (_success, _lendAmount);
  	}
 	
