@@ -213,19 +213,28 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	 * @return the lenders addresses, amounts and interest rates
 	 */
 	function pendingLendersList(uint256 _loanKey) public view returns (address[], uint256[], uint8[]) {
-		FriendLoanLib.Lender[] memory lenders = data.pendingLendersList(_loanKey);
-		address[] memory addresses = new address[](lenders.length);
-		uint256[] memory amounts = new uint256[](lenders.length);
-		uint8[] memory interestRates = new uint8[](lenders.length);
-		
-		for(uint256 i = 0; i < lenders.length; i++) {
-			FriendLoanLib.Lender memory lender = lenders[i];
-			addresses[i] = lender.lender;
-			amounts[i] = lender.amount;
-			interestRates[i] = lender.interestRate;
-		}
-		return (addresses, amounts, interestRates);
+		return formattedLendersList(data.pendingLendersList(_loanKey));
 	}
+	
+	/**
+	 * @dev format a lenders list
+   * @param _lenders lenders list.
+	 * @return the lenders addresses, amounts and interest rates
+	 */
+	function formattedLendersList(FriendLoanLib.Lender[] _lenders) private pure returns (address[], uint256[], uint8[]) {
+		address[] memory _addresses = new address[](_lenders.length);
+		uint256[] memory _amounts = new uint256[](_lenders.length);
+		uint8[] memory _interestRates = new uint8[](_lenders.length);
+		
+		for(uint256 i = 0; i < _lenders.length; i++) {
+			FriendLoanLib.Lender memory _lender = _lenders[i];
+			_addresses[i] = _lender.lender;
+			_amounts[i] = _lender.amount;
+			_interestRates[i] = _lender.interestRate;
+		}
+		return (_addresses, _amounts, _interestRates);
+	}
+	
 	
 	/**
 	 * @dev approves a lender from the pending lender list
@@ -269,18 +278,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	 * @return the list of approved lenders
 	 */
 	function approvedLendersList(uint256 _loanKey) public view returns (address[], uint256[], uint8[]) {
-		FriendLoanLib.Lender[] memory lenders = data.approvedLendersList(_loanKey);
-		address[] memory addresses = new address[](lenders.length);
-		uint256[] memory amounts = new uint256[](lenders.length);
-		uint8[] memory interestRates = new uint8[](lenders.length);
-		
-		for(uint256 i = 0; i < lenders.length; i++) {
-			FriendLoanLib.Lender memory lender = lenders[i];
-			addresses[i] = lender.lender;
-			amounts[i] = lender.amount;
-			interestRates[i] = lender.interestRate;
-		}
-		return (addresses, amounts, interestRates);
+		return formattedLendersList(data.approvedLendersList(_loanKey));
 	}
 	
 }
