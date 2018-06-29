@@ -66,6 +66,7 @@ library FriendLoanLib {
 	event LoanStarted(uint256 indexed loanKey);
 	event LenderAdded(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
 	event LenderRemoved(uint256 indexed loanKey, address indexed lender);
+	event LenderAccepted(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
 	
 	/**
 	 * @dev The Loan creator
@@ -433,16 +434,19 @@ library FriendLoanLib {
     require(self.loans[_loanKey].acceptedLenders[_lenderAddress].created == false);
 		
 		uint256 _amount = self.loans[_loanKey].proposedLenders[_lenderAddress].amount;
+		uint8 _interestRate = self.loans[_loanKey].proposedLenders[_lenderAddress].interestRate;
 		if(self.loans[_loanKey].lendAmount.add(_amount) > self.loans[_loanKey].totalAmount) {
 			_amount = self.loans[_loanKey].totalAmount.sub(self.loans[_loanKey].lendAmount);
 			self.loans[_loanKey].proposedLenders[_lenderAddress].amount = _amount;
 		}
 		
-		self.loans[_loanKey].acceptedLenders[_lenderAddress] = Lender({index: 0, lender: _lenderAddress, amount: _amount, interestRate: self.loans[_loanKey].proposedLenders[_lenderAddress].interestRate, created: true});
+		self.loans[_loanKey].acceptedLenders[_lenderAddress] = Lender({index: 0, lender: _lenderAddress, amount: _amount, interestRate: _interestRate, created: true});
 		uint256 newIndex = self.loans[_loanKey].acceptedLendersKeys.push(_lenderAddress);
 		self.loans[_loanKey].acceptedLenders[_lenderAddress].index = newIndex;
 		self.loans[_loanKey].acceptedLendersSize++;
 		self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.sub(_amount);
+		
+		emit LenderAccepted(_loanKey, _lenderAddress, _amount, _interestRate);
 
 		return (true, _amount);
 	}

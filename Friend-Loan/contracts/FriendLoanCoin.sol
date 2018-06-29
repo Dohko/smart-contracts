@@ -24,6 +24,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	event LoanStarted(uint256 indexed loanKey);
 	event LenderAdded(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
 	event LenderRemoved(uint256 indexed loanKey, address indexed lender);
+	event LenderAccepted(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
 	
 	/**
 	 * @dev The Loan creator
