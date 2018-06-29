@@ -212,8 +212,8 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _loanKey The loan's key.
 	 * @return the lenders addresses, amounts and interest rates
 	 */
-	function lendersList(uint256 _loanKey) public view returns (address[], uint256[], uint8[]) {
-		FriendLoanLib.Lender[] memory lenders = data.lendersList(_loanKey);
+	function pendingLendersList(uint256 _loanKey) public view returns (address[], uint256[], uint8[]) {
+		FriendLoanLib.Lender[] memory lenders = data.pendingLendersList(_loanKey);
 		address[] memory addresses = new address[](lenders.length);
 		uint256[] memory amounts = new uint256[](lenders.length);
 		uint8[] memory interestRates = new uint8[](lenders.length);

@@ -395,7 +395,7 @@ library FriendLoanLib {
    * @param _loanKey The loan's key.
 	 * @return the list of pending lenders
 	 */
-	function lendersList(
+	function pendingLendersList(
 		Data storage self,
 		uint256 _loanKey
 	)
