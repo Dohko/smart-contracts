@@ -338,8 +338,11 @@ library FriendLoanLib {
     require(self.loans[_loanKey].loanStarted == false);
     require(self.loans[_loanKey].borrower != msg.sender);
     require(self.loans[_loanKey].maxInterestRate >= _interestRate);
-		require(self.loans[_loanKey].totalAmount >= _amount);
 		require(self.loans[_loanKey].proposedLenders[msg.sender].created == false);
+		
+		if(_amount > self.loans[_loanKey].totalAmount) {
+			_amount = self.loans[_loanKey].totalAmount;
+		}
 		
 		self.loans[_loanKey].proposedLenders[msg.sender] = Lender({index: 0, lender: msg.sender, amount: _amount, interestRate: _interestRate, created: true});
 		uint256 newIndex = self.loans[_loanKey].proposedLendersKeys.push(msg.sender);
@@ -439,12 +442,12 @@ library FriendLoanLib {
 			_amount = self.loans[_loanKey].totalAmount.sub(self.loans[_loanKey].lendAmount);
 			self.loans[_loanKey].proposedLenders[_lenderAddress].amount = _amount;
 		}
-		
+
 		self.loans[_loanKey].acceptedLenders[_lenderAddress] = Lender({index: 0, lender: _lenderAddress, amount: _amount, interestRate: _interestRate, created: true});
 		uint256 newIndex = self.loans[_loanKey].acceptedLendersKeys.push(_lenderAddress);
 		self.loans[_loanKey].acceptedLenders[_lenderAddress].index = newIndex;
 		self.loans[_loanKey].acceptedLendersSize++;
-		self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.sub(_amount);
+		self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.add(_amount);
 		
 		emit LenderAccepted(_loanKey, _lenderAddress, _amount, _interestRate);
 

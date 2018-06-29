@@ -235,6 +235,7 @@ contract('FriendLoanCoin', function(accounts) {
 					var increased = await hasGuarantorsCountBeenIncreased(this.token, newLoanId, 10000, this.guarantor);
 					assert.isTrue(increased);
 					await this.token.appendLender(newLoanId, 10000, this.loanMaxInterestRate, {from: this.lenderOne})
+					await this.token.acceptLender(newLoanId, this.lenderOne, {from: this.otherBorrower});
 					await this.token.startLoan(newLoanId, {from: this.otherBorrower});
 					increased = await hasGuarantorsCountBeenIncreased(this.token, newLoanId, 10000, this.otherGuarantor);
 					assert.isFalse(increased);
@@ -286,6 +287,7 @@ contract('FriendLoanCoin', function(accounts) {
 					const newLoanId = parseInt(logs[0].args.id);
 					await this.token.appendGuarantor(newLoanId, 10000, {from: this.guarantor})
 					await this.token.appendLender(newLoanId, 10000, this.loanMaxInterestRate, {from: this.lenderOne})
+					await this.token.acceptLender(newLoanId, this.lenderOne, {from: this.borrower})
 					await this.token.startLoan(newLoanId, {from: this.borrower});
 					const decreased = await hasGuarantorsCountBeenDecreased(this.token, newLoanId, this.guarantor);
 					assert.isFalse(decreased);
