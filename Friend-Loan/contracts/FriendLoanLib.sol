@@ -67,6 +67,8 @@ library FriendLoanLib {
 	event LenderAdded(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
 	event LenderRemoved(uint256 indexed loanKey, address indexed lender);
 	event LenderAccepted(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
+	event LenderDisapproved(uint256 indexed loanKey, address indexed lender, uint256 totalLendAmount, uint256 lendAmount);
+	
 	
 	/**
 	 * @dev The Loan creator
@@ -450,6 +452,43 @@ library FriendLoanLib {
 		self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.add(_amount);
 		
 		emit LenderAccepted(_loanKey, _lenderAddress, _amount, _interestRate);
+
+		return (true, _amount);
+	}
+
+	/**
+	 * @dev removes an approved lender from the accepted lender list
+   * @param self The storage data.
+   * @param _loanKey The loan's key.
+   * @param _lenderAddress The lender's address.
+	 * @return true if the lender has been removed from the accepted lender list and the lend's amount
+	 */
+	function removeApprovedLender(
+		Data storage self,
+		uint256 _loanKey,
+		address _lenderAddress
+	)
+		internal
+		returns (bool, uint256)
+	{
+    require(self.loans[_loanKey].created == true);
+    require(self.loans[_loanKey].loanStarted == false);
+    require(self.loans[_loanKey].borrower == msg.sender);
+    require(self.loans[_loanKey].proposedLenders[_lenderAddress].created == true);
+    require(self.loans[_loanKey].acceptedLenders[_lenderAddress].created == true);
+		require(self.loans[_loanKey].lendAmount > 0);
+		require(self.loans[_loanKey].acceptedLenders[_lenderAddress].amount > 0);
+		require(self.loans[_loanKey].lendAmount >= self.loans[_loanKey].acceptedLenders[_lenderAddress].amount);
+		
+		uint256 _amount = self.loans[_loanKey].proposedLenders[_lenderAddress].amount;
+		uint256 _lenderIndex = self.loans[_loanKey].acceptedLenders[_lenderAddress].index;
+
+		delete self.loans[_loanKey].acceptedLenders[_lenderAddress];
+		delete self.loans[_loanKey].acceptedLendersKeys[_lenderIndex];
+		self.loans[_loanKey].acceptedLendersSize--;
+		self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.sub(_amount);
+
+		emit LenderDisapproved(_loanKey, _lenderAddress, self.loans[_loanKey].lendAmount, _amount);
 
 		return (true, _amount);
 	}
