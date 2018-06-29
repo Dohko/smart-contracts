@@ -493,4 +493,30 @@ library FriendLoanLib {
 		return (true, _amount);
 	}
 	
+	/**
+	 * @dev gives the list of approved lenders for a loan
+   * @param self The storage data.
+   * @param _loanKey The loan's key.
+	 * @return the list of approved lenders
+	 */
+	function approvedLendersList(
+		Data storage self,
+		uint256 _loanKey
+	)
+		internal
+		view
+		returns (Lender[])
+	{
+    require(self.loans[_loanKey].created == true);
+		Lender[] memory lenders = new Lender[](self.loans[_loanKey].acceptedLendersSize);
+		
+		for(uint256 i = 0; i < self.loans[_loanKey].acceptedLendersSize; i++) {
+			address lenderKey = self.loans[_loanKey].acceptedLendersKeys[i];
+			Lender memory lender = self.loans[_loanKey].acceptedLenders[lenderKey];
+			lenders[i] = lender;
+		}
+		return lenders;
+	}
+	
+	
 }
