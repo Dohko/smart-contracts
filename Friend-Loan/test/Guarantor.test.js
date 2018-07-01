@@ -17,12 +17,12 @@ contract('FriendLoanCoin', function(accounts) {
 		this.loanNbPayments = 6;
 		this.loanPaymentType = 2;
 
-		this.borrower = accounts[0];
-		this.otherBorrower = accounts[4];
-		this.guarantor = accounts[1];
+		this.borrower = accounts[2];
+		this.otherBorrower = accounts[3];
+		this.guarantor = accounts[4];
 		this.otherGuarantor = accounts[5];
-		this.lenderOne = accounts[2];
-		this.lenderTwo = accounts[3];
+		this.lenderOne = accounts[6];
+		this.lenderTwo = accounts[7];
   });
 
 		
