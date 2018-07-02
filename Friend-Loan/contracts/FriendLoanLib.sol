@@ -69,7 +69,6 @@ library FriendLoanLib {
 	event LenderApproved(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
 	event LenderDisapproved(uint256 indexed loanKey, address indexed lender, uint256 totalLendAmount, uint256 lendAmount);
 	
-	
 	/**
 	 * @dev The Loan creator
    * @param self The storage data.
@@ -348,7 +347,7 @@ library FriendLoanLib {
 		
 		self.loans[_loanKey].pendingLenders[msg.sender] = Lender({index: 0, lender: msg.sender, amount: _amount, interestRate: _interestRate, created: true});
 		uint256 newIndex = self.loans[_loanKey].pendingLendersKeys.push(msg.sender);
-		self.loans[_loanKey].pendingLenders[msg.sender].index = newIndex;
+		self.loans[_loanKey].pendingLenders[msg.sender].index = newIndex - 1;
 		self.loans[_loanKey].pendingLendersSize++;
 		
 		emit LenderAdded(_loanKey, msg.sender, _amount, _interestRate);
@@ -376,12 +375,14 @@ library FriendLoanLib {
 
 		if(self.loans[_loanKey].approvedLenders[msg.sender].created == true) {
 			self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.sub(self.loans[_loanKey].pendingLenders[msg.sender].amount);
-			self.loans[_loanKey].approvedLendersSize--;
+			uint256 _approvedLenderIndex = self.loans[_loanKey].approvedLenders[msg.sender].index;
+			delete self.loans[_loanKey].approvedLendersKeys[_approvedLenderIndex];
 			delete self.loans[_loanKey].approvedLenders[msg.sender];
+			self.loans[_loanKey].approvedLendersSize--;
 		}
-		uint256 pendingLenderIndex = self.loans[_loanKey].pendingLenders[msg.sender].index;
+		uint256 _pendingLenderIndex = self.loans[_loanKey].pendingLenders[msg.sender].index;
 		delete self.loans[_loanKey].pendingLenders[msg.sender];
-		delete self.loans[_loanKey].pendingLendersKeys[pendingLenderIndex];
+		delete self.loans[_loanKey].pendingLendersKeys[_pendingLenderIndex];
 		self.loans[_loanKey].pendingLendersSize--;
 		
 		emit LenderRemoved(_loanKey, msg.sender);
@@ -404,14 +405,18 @@ library FriendLoanLib {
 		returns (Lender[])
 	{
     require(self.loans[_loanKey].created == true);
-		Lender[] memory lenders = new Lender[](self.loans[_loanKey].pendingLendersSize);
+		Lender[] memory _lenders = new Lender[](self.loans[_loanKey].pendingLendersSize);
 		
-		for(uint256 i = 0; i < self.loans[_loanKey].pendingLendersSize; i++) {
-			address lenderKey = self.loans[_loanKey].pendingLendersKeys[i];
-			Lender memory lender = self.loans[_loanKey].pendingLenders[lenderKey];
-			lenders[i] = lender;
+		uint256 _index = 0;
+		for(uint256 i = 0; i < self.loans[_loanKey].pendingLendersKeys.length; i++) {
+			address _lenderAddress = self.loans[_loanKey].pendingLendersKeys[i];
+			if (_lenderAddress != address(0)) {
+				Lender memory _lender = self.loans[_loanKey].pendingLenders[_lenderAddress];
+				_lenders[_index] = _lender;
+				_index++;
+			}
 		}
-		return lenders;
+		return _lenders;
 	}
 
 	/**
@@ -447,7 +452,7 @@ library FriendLoanLib {
 
 		self.loans[_loanKey].approvedLenders[_lenderAddress] = Lender({index: 0, lender: _lenderAddress, amount: _amount, interestRate: _interestRate, created: true});
 		uint256 newIndex = self.loans[_loanKey].approvedLendersKeys.push(_lenderAddress);
-		self.loans[_loanKey].approvedLenders[_lenderAddress].index = newIndex;
+		self.loans[_loanKey].approvedLenders[_lenderAddress].index = newIndex - 1;
 		self.loans[_loanKey].approvedLendersSize++;
 		self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.add(_amount);
 		
@@ -489,6 +494,7 @@ library FriendLoanLib {
 		self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.sub(_amount);
 
 		emit LenderDisapproved(_loanKey, _lenderAddress, self.loans[_loanKey].lendAmount, _amount);
+		// emit Logg(self.loans[_loanKey].pendingLendersSize);
 
 		return (true, _amount);
 	}
@@ -508,14 +514,18 @@ library FriendLoanLib {
 		returns (Lender[])
 	{
     require(self.loans[_loanKey].created == true);
-		Lender[] memory lenders = new Lender[](self.loans[_loanKey].approvedLendersSize);
+		Lender[] memory _lenders = new Lender[](self.loans[_loanKey].approvedLendersSize);
 		
-		for(uint256 i = 0; i < self.loans[_loanKey].approvedLendersSize; i++) {
-			address lenderKey = self.loans[_loanKey].approvedLendersKeys[i];
-			Lender memory lender = self.loans[_loanKey].approvedLenders[lenderKey];
-			lenders[i] = lender;
+		uint256 _index = 0;
+		for(uint256 i = 0; i < self.loans[_loanKey].approvedLendersKeys.length; i++) {
+			address _lenderAddress = self.loans[_loanKey].approvedLendersKeys[i];
+			if (_lenderAddress != address(0)) {
+				Lender memory _lender = self.loans[_loanKey].approvedLenders[_lenderAddress];
+				_lenders[_index] = _lender;
+				_index++;
+			}
 		}
-		return lenders;
+		return _lenders;
 	}
 	
 	
