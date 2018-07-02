@@ -245,7 +245,7 @@ contract('FriendLoanCoin', function(accounts) {
 				}
 			});
 		});
-		
+
 		describe('remove an approved lender', async function () {
 			beforeEach(async function() {
 				await this.token.appendLender(this.loanId, this.loanTotalAmount, this.loanMaxInterestRate, {from: this.lenderOne});
@@ -291,7 +291,7 @@ contract('FriendLoanCoin', function(accounts) {
 				const alreadyOnList = await disapproveLender(this.token, this.loanId, this.lenderTwo, this.borrower);
 				assert.isFalse(alreadyOnList);
 			});
-			
+
 			it('should remove an approved lender when its lend amount was greater at the beginning than the amount requested', async function() {
 				await this.token.removeLender(this.loanId, {from: this.lenderOne});
 				
@@ -305,17 +305,17 @@ contract('FriendLoanCoin', function(accounts) {
 				
 				await this.token.removeApprovedLender(this.loanId, this.lenderOne, {from: this.borrower});
 				await this.token.removeApprovedLender(this.loanId, this.lenderTwo, {from: this.borrower});
-				
+
 				var alreadyOnList = await disapproveLender(this.token, this.loanId, this.lenderOne, this.borrower);
 				assert.isFalse(alreadyOnList);
 				alreadyOnList = await disapproveLender(this.token, this.loanId, this.lenderTwo, this.borrower);
 				assert.isFalse(alreadyOnList);
-				
+
 				var [addresses, amounts, rates] = await this.token.pendingLendersList(this.loanId);
 				assert.isTrue(addresses.includes(this.lenderOne));
 				assert.isTrue(addresses.includes(this.lenderTwo));
-				assert.isTrue(amounts[0] == this.loanTotalAmount - 40);
-				assert.isTrue(amounts[1] == this.loanTotalAmount - amountLenderOne); // the lenderTwo lend amount was updated
+				assert.isTrue(amounts[0] == amountLenderOne);
+				assert.isTrue(amounts[1] == amountLenderTwo); // the lenderTwo initial lend amount isn't updated anymore!
 			});
 			
 		});
