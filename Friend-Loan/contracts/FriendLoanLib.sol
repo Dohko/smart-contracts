@@ -225,6 +225,26 @@ library FriendLoanLib {
 	}
 	
 	/**
+	 * @dev give the settlements planning for a loan
+   * @param self The storage data.
+   * @param _loanKey The loan's key.
+	 * @return an array of timestamps
+	 */
+	function settlements(
+		Data storage self,
+		uint256 _loanKey
+	)
+		internal
+		returns(uint256[])
+	{
+    require(self.loans[_loanKey].created == true);
+    require(self.loans[_loanKey].loanStarted == true);
+		require(self.loans[_loanKey].settlements.length == 0);
+		
+		return createSettlements(self.loans[_loanKey].paymentType, self.loans[_loanKey].nbPayments);
+	}
+	
+	/**
 	 * @dev gives the loan status
    * @param self The storage data.
    * @param _loanKey The loan's key.
