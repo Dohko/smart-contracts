@@ -28,7 +28,6 @@ library FriendLoanLib {
 	
 	struct Data {
 		mapping (uint256 => Loan) loans;
-		uint256 loansCount;
 		uint8 maxNbPayments;
 	}
 	
@@ -116,7 +115,6 @@ library FriendLoanLib {
 			pendingLendersSize: 0
 		});
 		self.loans[_key] = loan;
-		self.loansCount++;
 		emit LoanCreated(loan.index, loan.borrower, loan.totalAmount, loan.maxInterestRate, loan.nbPayments, uint8(loan.paymentType));
 
 		// 3. Interaction
@@ -228,7 +226,7 @@ library FriendLoanLib {
 		if(_guaranteeAmount.add(_amount) > _totalAmount) {
 			_amount = _totalAmount.sub(_guaranteeAmount);
 		}
-		_guaranteeAmount += _amount;
+		_guaranteeAmount = _guaranteeAmount.add(_amount);
 
 		if(self.loans[_loanKey].guarantors[msg.sender].engaged == true) {
 			uint256 _guarantorAmount = self.loans[_loanKey].guarantors[msg.sender].amount;
@@ -240,7 +238,7 @@ library FriendLoanLib {
 		}
 
 		self.loans[_loanKey].guaranteeAmount = _guaranteeAmount;
-		self.loans[_loanKey].guarantorsCount++;
+		self.loans[_loanKey].guarantorsCount = self.loans[_loanKey].guarantorsCount.add(1);
 
 		assert(self.loans[_loanKey].totalAmount >= self.loans[_loanKey].guaranteeAmount);
 		emit GuarantorAdded(_loanKey, msg.sender, _amount);
@@ -273,7 +271,7 @@ library FriendLoanLib {
 		_guaranteeAmount = _guaranteeAmount.sub(_guarantorAmount);
 		self.loans[_loanKey].guaranteeAmount = _guaranteeAmount;
 		delete self.loans[_loanKey].guarantors[_guarantor];
-		self.loans[_loanKey].guarantorsCount--;
+		self.loans[_loanKey].guarantorsCount = self.loans[_loanKey].guarantorsCount.sub(1);
 		
 		assert(self.loans[_loanKey].guaranteeAmount >= 0);
 		emit GuarantorRemoved(_loanKey, _guarantor);
@@ -366,8 +364,8 @@ library FriendLoanLib {
 		
 		self.loans[_loanKey].pendingLenders[msg.sender] = Lender({index: 0, lender: msg.sender, amount: _amount, interestRate: _interestRate, created: true});
 		uint256 newIndex = self.loans[_loanKey].pendingLendersKeys.push(msg.sender);
-		self.loans[_loanKey].pendingLenders[msg.sender].index = newIndex - 1;
-		self.loans[_loanKey].pendingLendersSize++;
+		self.loans[_loanKey].pendingLenders[msg.sender].index = newIndex.sub(1);
+		self.loans[_loanKey].pendingLendersSize = self.loans[_loanKey].pendingLendersSize.add(1);
 		
 		emit LenderAdded(_loanKey, msg.sender, _amount, _interestRate);
 		
@@ -397,12 +395,12 @@ library FriendLoanLib {
 			uint256 _approvedLenderIndex = self.loans[_loanKey].approvedLenders[msg.sender].index;
 			delete self.loans[_loanKey].approvedLendersKeys[_approvedLenderIndex];
 			delete self.loans[_loanKey].approvedLenders[msg.sender];
-			self.loans[_loanKey].approvedLendersSize--;
+			self.loans[_loanKey].approvedLendersSize = self.loans[_loanKey].approvedLendersSize.sub(1);
 		}
 		uint256 _pendingLenderIndex = self.loans[_loanKey].pendingLenders[msg.sender].index;
 		delete self.loans[_loanKey].pendingLenders[msg.sender];
 		delete self.loans[_loanKey].pendingLendersKeys[_pendingLenderIndex];
-		self.loans[_loanKey].pendingLendersSize--;
+		self.loans[_loanKey].pendingLendersSize = self.loans[_loanKey].pendingLendersSize.sub(1);
 		
 		emit LenderRemoved(_loanKey, msg.sender);
 		
@@ -432,7 +430,7 @@ library FriendLoanLib {
 			if (_lenderAddress != address(0)) {
 				Lender memory _lender = self.loans[_loanKey].pendingLenders[_lenderAddress];
 				_lenders[_index] = _lender;
-				_index++;
+				_index = _index.add(1);
 			}
 		}
 		return _lenders;
@@ -470,8 +468,8 @@ library FriendLoanLib {
 
 		self.loans[_loanKey].approvedLenders[_lenderAddress] = Lender({index: 0, lender: _lenderAddress, amount: _amount, interestRate: _interestRate, created: true});
 		uint256 newIndex = self.loans[_loanKey].approvedLendersKeys.push(_lenderAddress);
-		self.loans[_loanKey].approvedLenders[_lenderAddress].index = newIndex - 1;
-		self.loans[_loanKey].approvedLendersSize++;
+		self.loans[_loanKey].approvedLenders[_lenderAddress].index = newIndex.sub(1);
+		self.loans[_loanKey].approvedLendersSize = self.loans[_loanKey].approvedLendersSize.add(1);
 		self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.add(_amount);
 		
 		emit LenderApproved(_loanKey, _lenderAddress, _amount, _interestRate);
@@ -508,7 +506,7 @@ library FriendLoanLib {
 
 		delete self.loans[_loanKey].approvedLenders[_lenderAddress];
 		delete self.loans[_loanKey].approvedLendersKeys[_lenderIndex];
-		self.loans[_loanKey].approvedLendersSize--;
+		self.loans[_loanKey].approvedLendersSize = self.loans[_loanKey].approvedLendersSize.sub(1);
 		self.loans[_loanKey].lendAmount = self.loans[_loanKey].lendAmount.sub(_amount);
 
 		emit LenderDisapproved(_loanKey, _lenderAddress, self.loans[_loanKey].lendAmount, _amount);
@@ -539,7 +537,7 @@ library FriendLoanLib {
 			if (_lenderAddress != address(0)) {
 				Lender memory _lender = self.loans[_loanKey].approvedLenders[_lenderAddress];
 				_lenders[_index] = _lender;
-				_index++;
+				_index = _index.add(1);
 			}
 		}
 		return _lenders;

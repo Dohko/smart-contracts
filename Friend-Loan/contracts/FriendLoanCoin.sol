@@ -45,8 +45,9 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		public
 		returns (bool)
 	{		
-		counter++;
-		data.createLoan(counter, _amount, _maxInterestRate, _nbPayments, _paymentType);
+		uint256 _newIndex = counter.add(1);
+		data.createLoan(_newIndex, _amount, _maxInterestRate, _nbPayments, _paymentType);
+		counter = _newIndex;
 		return true;
 	}
 	
@@ -73,7 +74,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	 * @return the number of loans
 	 */
 	function loansCount() public view returns(uint256) {
-		return data.loansCount;
+		return counter;
 	}
 	
 
