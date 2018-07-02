@@ -184,6 +184,24 @@ library FriendLoanLib {
 	}
 	
 	/**
+	 * @dev gives the loan status
+   * @param self The storage data.
+   * @param _loanKey The loan's key.
+	 * @return true if the loan has started or false if is not
+	 */
+	function isStarted(
+		Data storage self,
+		uint256 _loanKey
+	)
+		internal
+		view
+		returns(bool)
+	{
+    require(self.loans[_loanKey].created == true);
+		return self.loans[_loanKey].loanStarted == true;
+	}
+	
+	/**
 	 * @dev adds a guarantor for a loan
    * @param self The storage data.
    * @param _loanKey The loan's key.

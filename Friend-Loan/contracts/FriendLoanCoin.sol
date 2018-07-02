@@ -88,6 +88,15 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	}
 	
 	/**
+	 * @dev gives the loan status
+   * @param _loanKey The loan's key.
+	 * @return true if the loan has started or false if is not
+	 */
+	function isStarted(uint256 _loanKey) public view returns(bool) {
+		return data.isStarted(_loanKey);
+	}
+	
+	/**
 	 * @dev checks if a specified guarantor is engaged by the loan
    * @param _loanKey The loan's key.
    * @param _guarantor The guarantor to check
