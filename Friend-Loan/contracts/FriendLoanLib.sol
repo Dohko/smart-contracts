@@ -56,6 +56,8 @@ library FriendLoanLib {
 		mapping (address => Lender) approvedLenders;
 		address[] approvedLendersKeys;
 		uint256 approvedLendersSize;
+		
+		uint256[] settlements;
 	}
 	
 	event LoanCreated(uint256 indexed id, address indexed borrower, uint256 amount, uint8 maxInterestRate, uint8 nbPayments, uint8 paymentType);
@@ -112,7 +114,8 @@ library FriendLoanLib {
 			approvedLendersKeys: new address[](0),
 			lendAmount: 0,
 			pendingLendersKeys: new address[](0),
-			pendingLendersSize: 0
+			pendingLendersSize: 0,
+			settlements: new uint256[](0)
 		});
 		self.loans[_key] = loan;
 		emit LoanCreated(loan.index, loan.borrower, loan.totalAmount, loan.maxInterestRate, loan.nbPayments, uint8(loan.paymentType));
@@ -175,11 +178,50 @@ library FriendLoanLib {
 		require(self.loans[_loanKey].totalAmount == self.loans[_loanKey].lendAmount);
 		require(self.loans[_loanKey].guarantorsCount > 0 && self.loans[_loanKey].approvedLendersSize > 0);
 		require(self.loans[_loanKey].borrower == msg.sender);
+		require(self.loans[_loanKey].settlements.length == 0);
 		
+		self.loans[_loanKey].settlements = createSettlements(self.loans[_loanKey].paymentType, self.loans[_loanKey].nbPayments);
+		assert(self.loans[_loanKey].settlements.length > 0);
 		self.loans[_loanKey].loanStarted = true;
 		emit LoanStarted(_loanKey);
 		
 		return true;
+	}
+	
+	/**
+	 * @dev creates the settlements planning
+   * @param _paymentType the payment type (day / week / month).
+   * @param _nbPayments The number of payments.
+	 * @return an array of timestamps
+	 */
+	function createSettlements(
+		PaymentType _paymentType,
+		uint8 _nbPayments
+	)
+		private
+		constant
+		returns(uint256[])
+	{
+		uint256[] memory _settlements = new uint256[](_nbPayments);
+		uint256 _day = 60 * 60 * 24;
+		uint256 _multiplier;
+		if(_paymentType == PaymentType.Day) {
+			_multiplier = _day;
+		}
+		else if(_paymentType == PaymentType.Week) {
+			_multiplier = _day * 7;
+		}
+		else if(_paymentType == PaymentType.Month) {
+			_multiplier = _day * 31;
+		}
+		else {
+			return new uint256[](0);
+		}
+		for(uint8 i = 0; i < _nbPayments; i++) {
+			uint256 _settleTime = now.mul(now).mul(_multiplier).mul(i + 1);
+			_settlements[i] = _settleTime;
+		}
+		return _settlements;
 	}
 	
 	/**
