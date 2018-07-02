@@ -13,9 +13,9 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	
 	using FriendLoanLib for FriendLoanLib.Data;
 	// our storage data
-	FriendLoanLib.Data data;
+	FriendLoanLib.Data private data;
 	
-  uint256 public counter = 0;
+  uint256 private counter = 0;
 	
 	event LoanCreated(uint256 indexed id, address indexed borrower, uint256 amount, uint8 maxInterestRate, uint8 nbPayments, uint8 paymentType);
 	event GuarantorAdded(uint256 indexed loanKey, address indexed guarantor, uint256 guarantee);
