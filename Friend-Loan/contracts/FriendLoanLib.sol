@@ -235,6 +235,7 @@ library FriendLoanLib {
 		uint256 _loanKey
 	)
 		internal
+		view
 		returns(uint256[])
 	{
     require(self.loans[_loanKey].created == true);

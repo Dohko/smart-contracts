@@ -101,8 +101,8 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _loanKey The loan's key.
 	 * @return an array of timestamps
 	 */
-	function settlements(uint256 _loanKey) public returns(uint256[]) {
-		return data.createSettlements(_loanKey);
+	function settlements(uint256 _loanKey) public view returns(uint256[]) {
+		return data.settlements(_loanKey);
 	}
 	
 	/**
