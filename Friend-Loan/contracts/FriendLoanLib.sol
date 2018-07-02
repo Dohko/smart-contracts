@@ -91,6 +91,7 @@ library FriendLoanLib {
 		returns(Loan)
 	{
 		// 1. Conditions
+    require(self.loans[_key].created == false);
 		require(_amount > 0);
 		require(_nbPayments > 0);
 		require(self.maxNbPayments > _nbPayments);
