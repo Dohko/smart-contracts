@@ -46,7 +46,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		returns (bool)
 	{		
 		counter = counter.add(1);
-		data.createLoan(_newIndex, _amount, _maxInterestRate, _nbPayments, _paymentType);
+		data.createLoan(counter, _amount, _maxInterestRate, _nbPayments, _paymentType);
 		return true;
 	}
 	
