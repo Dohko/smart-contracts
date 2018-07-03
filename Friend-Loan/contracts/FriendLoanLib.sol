@@ -203,16 +203,15 @@ library FriendLoanLib {
 		returns(uint256[])
 	{
 		uint256[] memory _settlements = new uint256[](_nbPayments);
-		uint256 _day = 60 * 60 * 24;
 		uint256 _multiplier;
 		if(_paymentType == PaymentType.Day) {
-			_multiplier = _day;
+			_multiplier = 1 days;
 		}
 		else if(_paymentType == PaymentType.Week) {
-			_multiplier = _day * 7;
+			_multiplier = 7 days;
 		}
 		else if(_paymentType == PaymentType.Month) {
-			_multiplier = _day * 31;
+			_multiplier = 31 days;
 		}
 		else {
 			return new uint256[](0);
