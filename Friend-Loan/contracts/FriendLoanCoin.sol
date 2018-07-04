@@ -16,6 +16,10 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	FriendLoanLib.Data private data;
 	
   uint256 private counter = 0;
+
+	// It contains users performing an action (withdrawal, add a guarantee..).
+	// The user is blocked the time of the action then unlock at the end.
+	mapping (address => bool) locked;
 	
 	event LoanCreated(uint256 indexed id, address indexed borrower, uint256 amount, uint8 maxInterestRate, uint8 nbPayments, uint8 paymentType);
 	event GuarantorAdded(uint256 indexed loanKey, address indexed guarantor, uint256 guarantee);
@@ -26,6 +30,14 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	event LenderRemoved(uint256 indexed loanKey, address indexed lender);
 	event LenderApproved(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
 	event LenderDisapproved(uint256 indexed loanKey, address indexed lender, uint256 totalLendAmount, uint256 lendAmount);
+	
+  /**
+   * @dev Throws if called by an locker account.
+   */
+  modifier exceptLocked() {
+    require(locked[msg.sender] == false);
+    _;
+  }
 	
 	/**
 	 * @dev The Loan creator
@@ -42,11 +54,14 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		uint8 _paymentType
 	)
 		onlyWhitelisted
+		exceptLocked
 		public
 		returns (bool)
-	{		
+	{
+		locked[msg.sender] = true;
 		counter = counter.add(1);
 		data.createLoan(counter, _amount, _maxInterestRate, _nbPayments, _paymentType);
+		locked[msg.sender] = false;
 		return true;
 	}
 	
@@ -82,8 +97,10 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _loanKey The loan's key.
 	 * @return true if the loan has started
 	 */
-	function startLoan(uint256 _loanKey) onlyWhitelisted public returns(bool) {
+	function startLoan(uint256 _loanKey) onlyWhitelisted exceptLocked public returns(bool) {
+		locked[msg.sender] = true;
 		data.startLoan(_loanKey);
+		locked[msg.sender] = false;
 		return true;
 	}
 	
@@ -165,10 +182,13 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		uint256 _amount
 	)
 		onlyWhitelisted
+		exceptLocked
 		public
 		returns (bool)
 	{
+		locked[msg.sender] = true;
 		data.appendGuarantor(_loanKey, _amount);
+		locked[msg.sender] = false;
 		return true;
 	}
 	
@@ -177,8 +197,10 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _loanKey The loan's key.
 	 * @return true if the guarantor has been removed
 	 */
-	function removeGuarantor(uint256 _loanKey) onlyWhitelisted public returns (bool) {
+	function removeGuarantor(uint256 _loanKey) onlyWhitelisted exceptLocked public returns (bool) {
+		locked[msg.sender] = true;
 		data.removeGuarantor(_loanKey, msg.sender);
+		locked[msg.sender] = false;
 		return true;
 	}
 	
@@ -211,10 +233,13 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		address _oldGuarantor
 	)
 		onlyWhitelisted
+		exceptLocked
 		public
 		returns (bool)
 	{
+		locked[msg.sender] = true;
 		data.replaceGuarantor(_loanKey, _oldGuarantor, msg.sender);
+		locked[msg.sender] = false;
 		return true;
 	}
 	
@@ -231,10 +256,13 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		uint8 _interestRate
 	)
 		onlyWhitelisted
+		exceptLocked
 		public
 		returns (bool)
 	{
+		locked[msg.sender] = true;
 		data.appendLender(_loanKey, _amount, _interestRate);
+		locked[msg.sender] = false;
 		return true;
 	}
 	
@@ -243,8 +271,10 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _loanKey The loan's key.
 	 * @return true if the lender has been removed
 	 */
-	function removeLender(uint256 _loanKey) public returns (bool) {
+	function removeLender(uint256 _loanKey) public onlyWhitelisted exceptLocked returns (bool) {
+		locked[msg.sender] = true;
 		data.removeLender(_loanKey);
+		locked[msg.sender] = false;
 		return true;
 	}
 	
@@ -288,10 +318,13 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		address _lenderAddress
 	)
 		onlyWhitelisted
+		exceptLocked
 		public
 		returns (bool, uint256)
 	{
+		locked[msg.sender] = true;
 		(bool _success, uint256 _lendAmount) = data.approveLender(_loanKey, _lenderAddress);
+		locked[msg.sender] = false;
 		return (_success, _lendAmount);
 	}
 	
@@ -306,10 +339,13 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		address _lenderAddress
 	)
 		onlyWhitelisted
+		exceptLocked
 		public
 		returns (bool, uint256)
 	{
+		locked[msg.sender] = true;
 		(bool _success, uint256 _lendAmount) = data.removeApprovedLender(_loanKey, _lenderAddress);
+		locked[msg.sender] = false;
 		return (_success, _lendAmount);
  	}
 	
