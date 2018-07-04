@@ -76,6 +76,24 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	}
 
 	/**
+	 * @dev Unlock an address
+	 * @return true if the address has been unlocked
+	 */
+	function unlockAddress(address _address) onlyOwner public returns (bool) {
+		locked[_address] = false;
+		return true;
+	}
+
+	/**
+	 * @dev Lock an address
+	 * @return true if the address has been locked
+	 */
+	function lockAddress(address _address) onlyOwner public returns (bool) {
+		locked[_address] = true;
+		return true;
+	}
+
+	/**
 	 * @dev get the max number of payments
 	 * @return the max number of payments
 	 */
