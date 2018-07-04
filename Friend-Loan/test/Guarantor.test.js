@@ -19,8 +19,6 @@ contract('FriendLoanCoin', function(accounts) {
 	const guarantor = accounts[4];
 	const otherGuarantor = accounts[5];
 	const lenderOne = accounts[6];
-	const lenderTwo = accounts[7];
-	
 	
   before(async function() {
 		token = await FriendLoanCoin.deployed();
