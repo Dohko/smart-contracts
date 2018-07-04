@@ -28,6 +28,7 @@ library FriendLoanLib {
 	
 	struct Data {
 		mapping (uint256 => Loan) loans;
+		mapping (address => uint256[]) userLoans;
 		uint8 maxNbPayments;
 	}
 	
@@ -182,6 +183,10 @@ library FriendLoanLib {
 		
 		self.loans[_loanKey].settlements = createSettlements(self.loans[_loanKey].paymentType, self.loans[_loanKey].nbPayments);
 		assert(self.loans[_loanKey].settlements.length > 0);
+		
+		bool append = appendLoanToUser(self, _loanKey);
+		assert(append);
+		
 		self.loans[_loanKey].loanStarted = true;
 		emit LoanStarted(_loanKey);
 		
@@ -221,6 +226,63 @@ library FriendLoanLib {
 			_settlements[i] = _settleTime;
 		}
 		return _settlements;
+	}
+	
+	/**
+	 * @dev appends the loan to the lenders
+   * @param self The storage data.
+   * @param _loanKey The loan's key.
+	 * @return true if the loan has been added
+	 */
+	function appendLoanToUser(
+		Data storage self,
+		uint256 _loanKey
+	)
+		private
+		returns(bool)
+	{
+    require(self.loans[_loanKey].created == true);
+    require(self.loans[_loanKey].loanStarted == false);
+		require(self.loans[_loanKey].settlements.length > 0);
+		
+		for(uint256 i = 0; i < self.loans[_loanKey].approvedLendersKeys.length; i++) {
+			address _lenderAddress = self.loans[_loanKey].approvedLendersKeys[i];
+			if (_lenderAddress != address(0)) {
+				self.userLoans[_lenderAddress].push(_loanKey);
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * @dev Returns the loans, amounts lent and its interest rates for a lender
+   * @param self The storage data.
+   * @param _lender the lender.
+	 * @return an array containing the loan indexes, an array containing the amounts lent and an array containing the interest rates
+	 */
+	function loansForUser(
+		Data storage self,
+		address _lender
+	)
+	internal
+	view
+	returns(uint256[], uint256[], uint8[])
+	{
+		uint256 _nbLoans = self.userLoans[_lender].length;
+		uint256[] memory _loans = new uint256[](_nbLoans);
+		uint256[] memory _amounts = new uint256[](_nbLoans);
+		uint8[] memory _interestRates = new uint8[](_nbLoans);
+		uint256 _index = 0;
+		for(uint256 i = 0; i < _nbLoans; i++) {
+			uint256 _loanId = self.userLoans[_lender][i];
+			if (self.loans[_loanId].created == true && self.loans[_loanId].approvedLenders[_lender].created == true) {
+				_loans[_index] = _loanId;
+				_amounts[_index] = self.loans[_loanId].approvedLenders[_lender].amount;
+				_interestRates[_index] = self.loans[_loanId].approvedLenders[_lender].interestRate;
+				_index++;
+			}
+		}
+		return (_loans, _amounts, _interestRates);
 	}
 	
 	/**
