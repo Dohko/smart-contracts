@@ -11,6 +11,9 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
   string public symbol = "FLC";
   uint8 public decimals = 2;
 	
+	// The emergency mode
+	bool emergency;
+	
 	using FriendLoanLib for FriendLoanLib.Data;
 	// our storage data
 	FriendLoanLib.Data private data;
@@ -30,6 +33,14 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 	event LenderRemoved(uint256 indexed loanKey, address indexed lender);
 	event LenderApproved(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
 	event LenderDisapproved(uint256 indexed loanKey, address indexed lender, uint256 totalLendAmount, uint256 lendAmount);
+	
+  /**
+   * @dev Throws if we are in the emergency mode.
+   */
+  modifier notOnEmergencyMode() {
+    require(emergency == false);
+    _;
+  }
 	
   /**
    * @dev Throws if called by an locker account.
@@ -53,6 +64,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		uint8 _nbPayments,
 		uint8 _paymentType
 	)
+		notOnEmergencyMode
 		onlyWhitelisted
 		exceptLocked
 		public
@@ -70,10 +82,29 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _maxNbPayments The new max number of loan payments.
 	 * @return true if the max number of payment has been updated
 	 */
-	function setMaxNbPayments(uint8 _maxNbPayments) onlyOwner public returns (bool) {
+	function setMaxNbPayments(uint8 _maxNbPayments) notOnEmergencyMode onlyOwner public returns (bool) {
 		data.setMaxNbPayments(_maxNbPayments);
 		return true;
 	}
+	
+	/**
+	 * @dev Activates the emergency mode
+	 * @return true if the emergency mode has been activated
+	 */
+	function redButton() onlyOwner public returns (bool) {
+		emergency = true;
+		return true;
+	}
+
+	/**
+	 * @dev Turns off the emergency mode
+	 * @return true if the emergency mode has been disabled
+	 */
+	function greenButton() onlyOwner public returns (bool) {
+		emergency = false;
+		return true;
+	}
+	
 
 	/**
 	 * @dev Unlock an address
@@ -115,7 +146,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _loanKey The loan's key.
 	 * @return true if the loan has started
 	 */
-	function startLoan(uint256 _loanKey) onlyWhitelisted exceptLocked public returns(bool) {
+	function startLoan(uint256 _loanKey) notOnEmergencyMode onlyWhitelisted exceptLocked public returns(bool) {
 		locked[msg.sender] = true;
 		data.startLoan(_loanKey);
 		locked[msg.sender] = false;
@@ -185,6 +216,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		uint256 _loanKey,
 		uint256 _amount
 	)
+		notOnEmergencyMode
 		onlyWhitelisted
 		exceptLocked
 		public
@@ -201,7 +233,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _loanKey The loan's key.
 	 * @return true if the guarantor has been removed
 	 */
-	function removeGuarantor(uint256 _loanKey) onlyWhitelisted exceptLocked public returns (bool) {
+	function removeGuarantor(uint256 _loanKey) notOnEmergencyMode onlyWhitelisted exceptLocked public returns (bool) {
 		locked[msg.sender] = true;
 		data.removeGuarantor(_loanKey, msg.sender);
 		locked[msg.sender] = false;
@@ -236,6 +268,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		uint256 _loanKey,
 		address _oldGuarantor
 	)
+		notOnEmergencyMode
 		onlyWhitelisted
 		exceptLocked
 		public
@@ -259,6 +292,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		uint256 _amount,
 		uint8 _interestRate
 	)
+		notOnEmergencyMode
 		onlyWhitelisted
 		exceptLocked
 		public
@@ -275,7 +309,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _loanKey The loan's key.
 	 * @return true if the lender has been removed
 	 */
-	function removeLender(uint256 _loanKey) public onlyWhitelisted exceptLocked returns (bool) {
+	function removeLender(uint256 _loanKey) public notOnEmergencyMode onlyWhitelisted exceptLocked returns (bool) {
 		locked[msg.sender] = true;
 		data.removeLender(_loanKey);
 		locked[msg.sender] = false;
