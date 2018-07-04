@@ -176,7 +176,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _lender the lender.
 	 * @return an array containing the loan indexes, an array containing the amounts lent and an array containing the interest rates
 	 */
-	function loansForLender(address _lender) internal view returns(uint256[], uint256[], uint8[]) {
+	function loansForLender(address _lender) public view returns(uint256[], uint256[], uint8[]) {
 		return data.loansForLender(_lender);
 	}
 	
@@ -309,7 +309,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _loanKey The loan's key.
 	 * @return true if the lender has been removed
 	 */
-	function removeLender(uint256 _loanKey) public notOnEmergencyMode onlyWhitelisted exceptLocked returns (bool) {
+	function removeLender(uint256 _loanKey) notOnEmergencyMode onlyWhitelisted exceptLocked public returns (bool) {
 		locked[msg.sender] = true;
 		data.removeLender(_loanKey);
 		locked[msg.sender] = false;
@@ -355,6 +355,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		uint256 _loanKey,
 		address _lenderAddress
 	)
+		notOnEmergencyMode
 		onlyWhitelisted
 		exceptLocked
 		public
@@ -376,6 +377,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
 		uint256 _loanKey,
 		address _lenderAddress
 	)
+		notOnEmergencyMode
 		onlyWhitelisted
 		exceptLocked
 		public
