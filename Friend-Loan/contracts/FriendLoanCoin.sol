@@ -110,7 +110,7 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _lender the lender.
 	 * @return an array containing the loan indexes, an array containing the amounts lent and an array containing the interest rates
 	 */
-	function loansForUser(address _lender) internal view returns(uint256[], uint256[], uint8[]) {
+	function loansForLender(address _lender) internal view returns(uint256[], uint256[], uint8[]) {
 		uint256 _nbLoans = self.userLoans[_lender].length;
 		uint256[] memory _loans = new uint256[](_nbLoans);
 		uint256[] memory _amounts = new uint256[](_nbLoans);

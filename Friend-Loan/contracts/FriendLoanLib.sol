@@ -260,7 +260,7 @@ library FriendLoanLib {
    * @param _lender the lender.
 	 * @return an array containing the loan indexes, an array containing the amounts lent and an array containing the interest rates
 	 */
-	function loansForUser(
+	function loansForLender(
 		Data storage self,
 		address _lender
 	)
