@@ -1,22 +1,19 @@
 pragma solidity ^0.4.24;
 
-import 'openzeppelin-solidity/contracts/token/ERC20/MintableToken.sol';
+import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
+import 'openzeppelin-solidity/contracts/ownership/Ownable.sol';
 import 'openzeppelin-solidity/contracts/ownership/Whitelist.sol';
-import './LoanBurnableToken.sol';
-import "./FriendLoanLib.sol";
+import "./EfherLib.sol";
 
-contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textmate bundle fix => }
+contract Efher is Whitelist {	// Textmate bundle fix => }
 
-  string public name = "Friend Loan Coin";
-  string public symbol = "FLC";
-  uint8 public decimals = 2;
-	
 	// The emergency mode
 	bool emergency;
 	
-	using FriendLoanLib for FriendLoanLib.Data;
+	using SafeMath for uint;
+	using EfherLib for EfherLib.Data;
 	// our storage data
-	FriendLoanLib.Data private data;
+	EfherLib.Data private data;
 	
   uint256 private counter = 0;
 
@@ -48,6 +45,14 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
   modifier exceptLocked() {
     require(locked[msg.sender] == false);
     _;
+  }
+	
+	/**
+	 * @dev Returns the contract balance
+	 * @return the contract balance
+	 */
+  function getBalance() public view returns (uint256) {
+      return address(this).balance;
   }
 	
 	/**
@@ -330,13 +335,13 @@ contract FriendLoanCoin is MintableToken, LoanBurnableCoin, Whitelist {	// Textm
    * @param _lenders lenders list.
 	 * @return the lenders addresses, amounts and interest rates
 	 */
-	function formattedLendersList(FriendLoanLib.Lender[] _lenders) private pure returns (address[], uint256[], uint8[]) {
+	function formattedLendersList(EfherLib.Lender[] _lenders) private pure returns (address[], uint256[], uint8[]) {
 		address[] memory _addresses = new address[](_lenders.length);
 		uint256[] memory _amounts = new uint256[](_lenders.length);
 		uint8[] memory _interestRates = new uint8[](_lenders.length);
 		
 		for(uint256 i = 0; i < _lenders.length; i++) {
-			FriendLoanLib.Lender memory _lender = _lenders[i];
+			EfherLib.Lender memory _lender = _lenders[i];
 			_addresses[i] = _lender.lender;
 			_amounts[i] = _lender.amount;
 			_interestRates[i] = _lender.interestRate;

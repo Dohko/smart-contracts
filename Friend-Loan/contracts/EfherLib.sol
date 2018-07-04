@@ -2,7 +2,7 @@ pragma solidity ^0.4.24;
 
 import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
 
-library FriendLoanLib {	
+library EfherLib {	
 	
 	using SafeMath for uint; // Textmate bundle fix => }
 	
@@ -108,7 +108,7 @@ library FriendLoanLib {
 			totalAmount: _amount,
 			maxInterestRate: _maxInterestRate,
 			nbPayments: _nbPayments,
-			paymentType: FriendLoanLib.PaymentType(_paymentType),
+			paymentType: EfherLib.PaymentType(_paymentType),
 			guaranteeAmount: 0,
 			guarantorsCount: 0,
 			approvedLendersSize: 0,

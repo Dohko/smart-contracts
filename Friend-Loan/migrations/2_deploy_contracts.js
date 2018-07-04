@@ -1,9 +1,9 @@
-const friendLoanLib = artifacts.require("FriendLoanLib");
-const loanCoin = artifacts.require("FriendLoanCoin");
+const EfherLib = artifacts.require("EfherLib");
+const Efher = artifacts.require("Efher");
 
 module.exports = function(deployer) {
-  deployer.deploy(friendLoanLib);
-	deployer.link(friendLoanLib, loanCoin);
-  deployer.deploy(loanCoin);
+  deployer.deploy(EfherLib);
+	deployer.link(EfherLib, Efher);
+  deployer.deploy(Efher);
 };
 

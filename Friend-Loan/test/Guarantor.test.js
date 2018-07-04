@@ -1,10 +1,10 @@
-const FriendLoanCoin = artifacts.require("FriendLoanCoin");
+const Efher = artifacts.require("Efher");
 
 require('chai')
   .use(require('chai-as-promised'))
 	.should();
 	
-contract('FriendLoanCoin', function(accounts) {
+contract('Efher', function(accounts) {
 	let token;
 	let loanId;
 	const owner = accounts[0];
@@ -21,7 +21,7 @@ contract('FriendLoanCoin', function(accounts) {
 	const lenderOne = accounts[6];
 	
   before(async function() {
-		token = await FriendLoanCoin.deployed();
+		token = await Efher.deployed();
 		await token.setMaxNbPayments(36);
   });
 
