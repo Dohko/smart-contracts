@@ -15,20 +15,22 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
 	// our storage data
 	EfherLib.Data private data;
 	
+	mapping(address => uint) refunds;
+	
   uint256 private counter = 0;
 
 	// It contains users performing an action (withdrawal, add a guarantee..).
 	// The user is blocked the time of the action then unlock at the end.
 	mapping (address => bool) locked;
 	
-	event LoanCreated(uint256 indexed id, address indexed borrower, uint256 amount, uint8 maxInterestRate, uint8 nbPayments, uint8 paymentType);
+	event LoanCreated(uint256 indexed id, address indexed borrower, uint256 amount, uint256 maxInterestRate, uint8 nbPayments, uint8 paymentType);
 	event GuarantorAdded(uint256 indexed loanKey, address indexed guarantor, uint256 guarantee);
 	event GuarantorRemoved(uint256 indexed loanKey, address indexed guarantor);
 	event GuarantorReplaced(uint256 indexed loanKey, address indexed oldGuarantor, address indexed newGuarantor);
 	event LoanStarted(uint256 indexed loanKey);
-	event LenderAdded(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
+	event LenderAdded(uint256 indexed loanKey, address indexed lender, uint256 lend, uint256 interestRate);
 	event LenderRemoved(uint256 indexed loanKey, address indexed lender);
-	event LenderApproved(uint256 indexed loanKey, address indexed lender, uint256 lend, uint8 interestRate);
+	event LenderApproved(uint256 indexed loanKey, address indexed lender, uint256 lend, uint256 interestRate);
 	event LenderDisapproved(uint256 indexed loanKey, address indexed lender, uint256 totalLendAmount, uint256 lendAmount);
 	
   /**
@@ -65,7 +67,7 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
 	 */
 	function createLoan (
 		uint256 _amount,
-		uint8 _maxInterestRate,
+		uint256 _maxInterestRate,
 		uint8 _nbPayments,
 		uint8 _paymentType
 	)
@@ -80,6 +82,51 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
 		data.createLoan(counter, _amount, _maxInterestRate, _nbPayments, _paymentType);
 		locked[msg.sender] = false;
 		return true;
+	}
+	
+	/**
+	 * @dev withdraw a sender address
+	 * @return true if the sender has been refunded
+	 */
+	function withdrawBalance() notOnEmergencyMode exceptLocked public returns (bool) {
+		require(refunds[msg.sender] > 0);
+		locked[msg.sender] = true;
+    uint amountToWithdraw = refunds[msg.sender];
+    refunds[msg.sender] = 0;
+		msg.sender.transfer(amountToWithdraw);
+		locked[msg.sender] = false;
+		return true;
+	}
+	
+	/**
+	 * @dev Custody of borrower money on deposit
+   * @param _loanKey The loan's key.
+   * @param _amount The deposit amount.
+	 * @return true if the money was deposited
+	 */
+	function depositFromBorrower(
+		uint256 _loanKey,
+		uint256 _amount
+	)
+		notOnEmergencyMode
+		exceptLocked
+		payable
+		public
+		returns (bool) {
+		require(msg.value == _amount);
+		locked[msg.sender] = true;
+		data.depositFromBorrower(_loanKey, _amount);
+		locked[msg.sender] = false;
+		return true;
+	}
+	
+	/**
+	 * @dev Returns the current borrower deposit and loan underfund 
+   * @param _loanKey The loan's key.
+	 * @return current borrower deposit and loan underfund
+	 */
+	function borrowerDepositAndUnderfund(uint256 _loanKey) public view returns (uint256, uint256) {
+		return data.borrowerDepositAndUnderfund(_loanKey);
 	}
 	
 	/**
@@ -159,20 +206,39 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
 	}
 	
 	/**
+	 * @dev Generates all loan repayments for the current period
+   * @param _loanKey The loan's key.
+	 * @return true if all the current loan repayments was generated.
+	 */
+	function generateLoanRepayments(uint256 _loanKey) notOnEmergencyMode exceptLocked public returns (bool) {
+		locked[msg.sender] = true;
+		(EfherLib.PaymentGenerator memory _generator) = data.generateLoanRepayments(_loanKey);
+		for(uint8 i = 0; i < _generator.lastUngeneratedPayments.length; i++) {
+			data.loans[_loanKey].settlements[i].generated = true;
+		}
+		for(uint8 j = 0; j < _generator.lenders.length; j++) {
+			refunds[_generator.lenders[j]] = refunds[_generator.lenders[j]].add(_generator.amounts[j]);
+		}
+		data.stopProcessing(_loanKey);
+		locked[msg.sender] = false;
+		return true;
+	}
+	
+	/**
 	 * @dev gives the loan status
    * @param _loanKey The loan's key.
-	 * @return true if the loan has started or false if is not
+	 * @return the loan status: 0 = nil, 1 = pending, 2 = started, 3 = paused, 4 = closed
 	 */
-	function isStarted(uint256 _loanKey) public view returns(bool) {
-		return data.isStarted(_loanKey);
+	function loanStatus(uint256 _loanKey) public view returns(uint) {
+		return data.loanStatus(_loanKey);
 	}
 	
 	/**
 	 * @dev give the settlements planning for a loan
    * @param _loanKey The loan's key.
-	 * @return an array of timestamps
+	 * @return an array of timestamps and an array of bool with settlement status
 	 */
-	function settlements(uint256 _loanKey) public view returns(uint256[]) {
+	function settlements(uint256 _loanKey) public view returns(uint256[], bool[]) {
 		return data.settlements(_loanKey);
 	}
 	
@@ -181,7 +247,7 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
    * @param _lender the lender.
 	 * @return an array containing the loan indexes, an array containing the amounts lent and an array containing the interest rates
 	 */
-	function loansForLender(address _lender) public view returns(uint256[], uint256[], uint8[]) {
+	function loansForLender(address _lender) public view returns(uint256[], uint256[], uint256[]) {
 		return data.loansForLender(_lender);
 	}
 	
@@ -224,11 +290,14 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
 		notOnEmergencyMode
 		onlyWhitelisted
 		exceptLocked
+		payable
 		public
 		returns (bool)
 	{
+		require(msg.value == _amount);
 		locked[msg.sender] = true;
-		data.appendGuarantor(_loanKey, _amount);
+		uint256 _refundAmount = data.appendGuarantor(_loanKey, _amount);
+		refunds[msg.sender] = refunds[msg.sender].add(_refundAmount);
 		locked[msg.sender] = false;
 		return true;
 	}
@@ -240,7 +309,8 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
 	 */
 	function removeGuarantor(uint256 _loanKey) notOnEmergencyMode onlyWhitelisted exceptLocked public returns (bool) {
 		locked[msg.sender] = true;
-		data.removeGuarantor(_loanKey, msg.sender);
+		uint256 _refundAmount = data.removeGuarantor(_loanKey, msg.sender);
+		refunds[msg.sender] = refunds[msg.sender].add(_refundAmount);
 		locked[msg.sender] = false;
 		return true;
 	}
@@ -259,7 +329,8 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
 		public
 		returns (bool)
 	{
-		data.removeGuarantor(_loanKey, _guarantor);
+		uint256 _refundAmount = data.removeGuarantor(_loanKey, _guarantor);
+		refunds[_guarantor] = refunds[_guarantor].add(_refundAmount);
 		return true;
 	}
 	
@@ -267,20 +338,25 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
 	 * @dev replaces a loan's guarantor
    * @param _loanKey The loan's key.
    * @param _oldGuarantor The guarantor to replace by
+   * @param _amount The new guarantee amount. Mush be the same amount as the previous one
 	 * @return true if the guarantor has been replaced
 	 */
 	function replaceGuarantor(
 		uint256 _loanKey,
-		address _oldGuarantor
+		address _oldGuarantor,
+		uint256 _amount
 	)
 		notOnEmergencyMode
 		onlyWhitelisted
 		exceptLocked
+		payable
 		public
 		returns (bool)
 	{
+		require(msg.value == _amount);
 		locked[msg.sender] = true;
-		data.replaceGuarantor(_loanKey, _oldGuarantor, msg.sender);
+		data.replaceGuarantor(_loanKey, _oldGuarantor, msg.sender, _amount);
+		refunds[_oldGuarantor] = refunds[_oldGuarantor].add(_amount);
 		locked[msg.sender] = false;
 		return true;
 	}
@@ -295,16 +371,19 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
 	function appendLender(
 		uint256 _loanKey,
 		uint256 _amount,
-		uint8 _interestRate
+		uint256 _interestRate
 	)
 		notOnEmergencyMode
 		onlyWhitelisted
 		exceptLocked
+		payable
 		public
 		returns (bool)
 	{
+		require(msg.value == _amount);
 		locked[msg.sender] = true;
-		data.appendLender(_loanKey, _amount, _interestRate);
+		uint256 _refundAmount = data.appendLender(_loanKey, _amount, _interestRate);
+		refunds[msg.sender] = refunds[msg.sender].add(_refundAmount);
 		locked[msg.sender] = false;
 		return true;
 	}
@@ -316,7 +395,8 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
 	 */
 	function removeLender(uint256 _loanKey) notOnEmergencyMode onlyWhitelisted exceptLocked public returns (bool) {
 		locked[msg.sender] = true;
-		data.removeLender(_loanKey);
+		uint256 _amount = data.removeLender(_loanKey);
+		refunds[msg.sender] = refunds[msg.sender].add(_amount);
 		locked[msg.sender] = false;
 		return true;
 	}
@@ -326,7 +406,7 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
    * @param _loanKey The loan's key.
 	 * @return the lenders addresses, amounts and interest rates
 	 */
-	function pendingLendersList(uint256 _loanKey) public view returns (address[], uint256[], uint8[]) {
+	function pendingLendersList(uint256 _loanKey) public view returns (address[], uint256[], uint256[]) {
 		return formattedLendersList(data.pendingLendersList(_loanKey));
 	}
 	
@@ -335,10 +415,10 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
    * @param _lenders lenders list.
 	 * @return the lenders addresses, amounts and interest rates
 	 */
-	function formattedLendersList(EfherLib.Lender[] _lenders) private pure returns (address[], uint256[], uint8[]) {
+	function formattedLendersList(EfherLib.Lender[] _lenders) private pure returns (address[], uint256[], uint256[]) {
 		address[] memory _addresses = new address[](_lenders.length);
 		uint256[] memory _amounts = new uint256[](_lenders.length);
-		uint8[] memory _interestRates = new uint8[](_lenders.length);
+		uint256[] memory _interestRates = new uint256[](_lenders.length);
 		
 		for(uint256 i = 0; i < _lenders.length; i++) {
 			EfherLib.Lender memory _lender = _lenders[i];
@@ -399,7 +479,7 @@ contract Efher is Whitelist {	// Textmate bundle fix => }
    * @param _loanKey The loan's key.
 	 * @return the list of approved lenders
 	 */
-	function approvedLendersList(uint256 _loanKey) public view returns (address[], uint256[], uint8[]) {
+	function approvedLendersList(uint256 _loanKey) public view returns (address[], uint256[], uint256[]) {
 		return formattedLendersList(data.approvedLendersList(_loanKey));
 	}
 	

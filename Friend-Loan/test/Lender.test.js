@@ -30,7 +30,7 @@ contract('Efher', function(accounts) {
 		beforeEach(async function() {
 			const { logs } = await token.createLoan(loanTotalAmount, loanMaxInterestRate, loanNbPayments, loanPaymentType, {from: borrower});
 			loanId = parseInt(logs[0].args.id);
-			await token.appendGuarantor(loanId, loanTotalAmount, {from: guarantor});
+			await token.appendGuarantor(loanId, loanTotalAmount, {from: guarantor, value: loanTotalAmount});
 		});
 
 		describe('pending lender list', async function () {
@@ -38,7 +38,8 @@ contract('Efher', function(accounts) {
 			it('should include the new lender on the pending list', async function() {
 				var [addresses, amounts, rates] = await token.pendingLendersList(loanId);
 				assert.isFalse(addresses.includes(lenderOne));
-				await token.appendLender(loanId, 10000, loanMaxInterestRate, {from: lenderOne});
+				const amount = 50;
+				await token.appendLender(loanId, amount, loanMaxInterestRate, {from: lenderOne, value: amount});
 				[addresses, amounts, rates] = await token.pendingLendersList(loanId);
 				assert.isTrue(addresses.includes(lenderOne));
 			});
@@ -46,7 +47,8 @@ contract('Efher', function(accounts) {
 			it('should not include the new lender on the pending list', async function() {
 				var [addresses, amounts, rates] = await token.pendingLendersList(loanId);
 				assert.isFalse(addresses.includes(lenderOne));
-				await token.appendLender(loanId, 10000, loanMaxInterestRate, {from: lenderOne});
+				const amount = 50;
+				await token.appendLender(loanId, amount, loanMaxInterestRate, {from: lenderOne, value: amount});
 				await token.removeLender(loanId, {from: lenderOne});
 				[addresses, amounts, rates] = await token.pendingLendersList(loanId);
 				assert.isFalse(addresses.includes(lenderOne));
@@ -56,7 +58,7 @@ contract('Efher', function(accounts) {
 		describe('append lender on pending list', async function () {
 			async function appendLender(token, key, lender, amount, interest) {
 				var addresses = [], amounts = [], rates = [];
-				try { await token.appendLender(key, amount, interest, {from: lender}); }catch (error) {addresses = [], amounts = [], rates = [];}
+				try { await token.appendLender(key, amount, interest, {from: lender, value: amount}); }catch (error) {addresses = [], amounts = [], rates = [];}
 				finally {
 					try { [addresses, amounts, rates] = await token.pendingLendersList(key); } catch (error) { addresses, amounts, rates = [];}
 					return addresses.includes(lender);
@@ -103,7 +105,7 @@ contract('Efher', function(accounts) {
 		describe('remove lender on pending list', async function () {
 
 			beforeEach(async function() {
-				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne});
+				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne, value: loanTotalAmount});
 			});
 
 			async function removeLender(token, key, lender) {
@@ -140,7 +142,7 @@ contract('Efher', function(accounts) {
 
 		describe('approved lender list', async function () {
 			beforeEach(async function() {
-				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne});
+				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne, value: loanTotalAmount});
 			});
 
 			it('should include the lender on the approved list', async function() {
@@ -176,7 +178,7 @@ contract('Efher', function(accounts) {
 
 		describe('approve a lender', async function () {
 			beforeEach(async function() {
-				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne});
+				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne, value: loanTotalAmount});
 			});
 
 			async function approveLender(token, key, lender, from) {
@@ -217,7 +219,7 @@ contract('Efher', function(accounts) {
 
 			it('should not approve a lender if the lend amount has already been reached', async function() {
 				await approveLender(token, loanId, lenderOne, borrower);
-				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderTwo});
+				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderTwo, value: loanTotalAmount});
 				var approved = await approveLender(token, loanId, lenderTwo, borrower);
 				assert.isFalse(approved);
 			});
@@ -244,17 +246,17 @@ contract('Efher', function(accounts) {
 
 		describe('remove an approved lender', async function () {
 			beforeEach(async function() {
-				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne});
+				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne, value: loanTotalAmount});
 				await token.approveLender(loanId, lenderOne, { from: borrower });
 			});
-			
+
 			async function disapproveLender(token, key, lender, from) {
 				var addresses = [];
 				try { await token.removeApprovedLender(key, lender, { from }); } catch (error) {}
 				try { [addresses] = await token.approvedLendersList(key); } catch (error) {}
 				return addresses.includes(lender);
 			}
-			
+
 			it('should remove an approved lender', async function() {
 				const alreadyOnList = await disapproveLender(token, loanId, lenderOne, borrower);
 				assert.isFalse(alreadyOnList);
@@ -283,22 +285,22 @@ contract('Efher', function(accounts) {
 			});
 
 			it('should not remove an approved lender who\'s not on the approved list', async function() {
-				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderTwo});
+				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderTwo, value: loanTotalAmount});
 				const alreadyOnList = await disapproveLender(token, loanId, lenderTwo, borrower);
 				assert.isFalse(alreadyOnList);
 			});
 
 			it('should remove an approved lender when its lend amount was greater at the beginning than the amount requested', async function() {
 				await token.removeLender(loanId, {from: lenderOne});
-				
+
 				const amountLenderOne = loanTotalAmount - 40;
 				const amountLenderTwo = loanTotalAmount;
-				await token.appendLender(loanId, amountLenderOne, loanMaxInterestRate, {from: lenderOne});
+				await token.appendLender(loanId, amountLenderOne, loanMaxInterestRate, {from: lenderOne, value: amountLenderOne});
 				await token.approveLender(loanId, lenderOne, { from: borrower });
-				
-				await token.appendLender(loanId, amountLenderTwo, loanMaxInterestRate, {from: lenderTwo});
+
+				await token.appendLender(loanId, amountLenderTwo, loanMaxInterestRate, {from: lenderTwo, value: amountLenderTwo});
 				await token.approveLender(loanId, lenderTwo, { from: borrower });
-				
+
 				await token.removeApprovedLender(loanId, lenderOne, {from: borrower});
 				await token.removeApprovedLender(loanId, lenderTwo, {from: borrower});
 
@@ -313,7 +315,7 @@ contract('Efher', function(accounts) {
 				assert.isTrue(amounts[0] == amountLenderOne);
 				assert.isTrue(amounts[1] == amountLenderTwo); // the lenderTwo initial lend amount isn't updated anymore!
 			});
-			
+
 		});
 		
 	});

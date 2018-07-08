@@ -23,16 +23,16 @@ contract('Efher', function(accounts) {
   before(async function() {
 		token = await Efher.deployed();
 		await token.setMaxNbPayments(36);
+		await token.addAddressToWhitelist(borrower, {from: owner});
+		await token.addAddressToWhitelist(guarantor, {from: owner});
+		await token.addAddressToWhitelist(otherBorrower, {from: owner});
+		await token.addAddressToWhitelist(lenderOne, {from: owner});
+		await token.addAddressToWhitelist(otherGuarantor, {from: owner});
   });
 
 		
 	describe('guarantors', async function () {
-		before(async function() {
-			await token.addAddressToWhitelist(borrower, {from: owner});
-			await token.addAddressToWhitelist(guarantor, {from: owner});
-			await token.addAddressToWhitelist(otherBorrower, {from: owner});
-			await token.addAddressToWhitelist(lenderOne, {from: owner});
-
+		beforeEach(async function() {
 			const { logs } = await token.createLoan(loanTotalAmount, loanMaxInterestRate, loanNbPayments, loanPaymentType, {from: borrower});
 			loanId = parseInt(logs[0].args.id);
 		});
@@ -43,9 +43,7 @@ contract('Efher', function(accounts) {
 				var guarantorsCount = 0;
 				var currentGuarantorsCount = 0;
 				try { guarantorsCount = await token.guarantorsCount(loanKey); } catch (error) { guarantorsCount = 0; }
-				try {
-					await token.appendGuarantor(loanKey, guarantorAmount, {from: guarantor})
-				}
+				try { await token.appendGuarantor(loanKey, guarantorAmount, {from: guarantor, value: guarantorAmount}); }
 				catch (error) {}
 				finally {
 					try { currentGuarantorsCount = await token.guarantorsCount(loanKey); } catch (error) { currentGuarantorsCount = 0; }
@@ -58,18 +56,26 @@ contract('Efher', function(accounts) {
 				assert.isTrue(increased);
 			});
 
+			it('should failed when the guarantee amount is already reached', async function() {
+				var increased = await hasGuarantorsCountBeenIncreased(token, loanId, loanTotalAmount, guarantor);
+				assert.isTrue(increased);
+				increased = await hasGuarantorsCountBeenIncreased(token, loanId, loanTotalAmount, otherGuarantor);
+				assert.isFalse(increased);
+			});
+
 			it('should not append a guarantor when the loan wasn\'t created', async function() {
 				const increased = await hasGuarantorsCountBeenIncreased(token, 99, 10000, guarantor);
 				assert.isFalse(increased);
 			});
 
-			it('should not append a guarantor when the loan has started', async function() {
+			it('should not append a guarantor when the loan has begun', async function() {
 				const currentMaxNbPayments = await token.maxNbPayments();
 				const { logs } = await token.createLoan(loanTotalAmount, loanMaxInterestRate, loanNbPayments, loanPaymentType, {from: otherBorrower});
 				const newLoanId = parseInt(logs[0].args.id);
 				var increased = await hasGuarantorsCountBeenIncreased(token, newLoanId, 10000, guarantor);
 				assert.isTrue(increased);
-				await token.appendLender(newLoanId, 10000, loanMaxInterestRate, {from: lenderOne})
+				const amount = 5000;
+				await token.appendLender(newLoanId, amount, loanMaxInterestRate, {from: lenderOne, value: amount})
 				await token.approveLender(newLoanId, lenderOne, {from: otherBorrower});
 				await token.startLoan(newLoanId, {from: otherBorrower});
 				increased = await hasGuarantorsCountBeenIncreased(token, newLoanId, 10000, otherGuarantor);
@@ -88,10 +94,14 @@ contract('Efher', function(accounts) {
 		});
 
 		describe('remove', async function () {
-			before(async function() {
-				await token.appendGuarantor(loanId, 5000, {from: guarantor})
+			beforeEach(async function() {
+				const isGuarantorOnLoan = await token.isGuarantorEngaged(loanId, guarantor);
+				if (isGuarantorOnLoan == false) {
+					const amount = 5000;
+					await token.appendGuarantor(loanId, amount, {from: guarantor, value: amount});
+				}
 			});
-
+			
 			async function hasGuarantorsCountBeenDecreased(token, loanKey, guarantor) {
 				var guarantorsCount = 0;
 				var currentGuarantorsCount = 0;
@@ -116,12 +126,13 @@ contract('Efher', function(accounts) {
 				assert.isFalse(decreased);
 			});
 
-			it('should not remove a guarantor when the loan has started', async function() {
+			it('should not remove a guarantor when the loan has begun', async function() {
 				const currentMaxNbPayments = await token.maxNbPayments();
 				const { logs } = await token.createLoan(loanTotalAmount, loanMaxInterestRate, loanNbPayments, loanPaymentType, {from: borrower});
 				const newLoanId = parseInt(logs[0].args.id);
-				await token.appendGuarantor(newLoanId, 10000, {from: guarantor})
-				await token.appendLender(newLoanId, 10000, loanMaxInterestRate, {from: lenderOne})
+				const amount = 10000;
+				await token.appendGuarantor(newLoanId, amount, {from: guarantor, value: amount})
+				await token.appendLender(newLoanId, amount, loanMaxInterestRate, {from: lenderOne, value: amount})
 				await token.approveLender(newLoanId, lenderOne, {from: borrower})
 				await token.startLoan(newLoanId, {from: borrower});
 				const decreased = await hasGuarantorsCountBeenDecreased(token, newLoanId, guarantor);
@@ -136,7 +147,8 @@ contract('Efher', function(accounts) {
 			it('should prevent a non-owner to remove a guarantor', async function() {
 				const { logs } = await token.createLoan(loanTotalAmount, loanMaxInterestRate, loanNbPayments, loanPaymentType, {from: borrower});
 				const newLoanId = parseInt(logs[0].args.id);
-				await token.appendGuarantor(newLoanId, 5000, {from: guarantor})
+				const amount = 5000;
+				await token.appendGuarantor(newLoanId, amount, {from: guarantor, value: amount});
 
 				var guarantorsCount = 0;
 				var currentGuarantorsCount = 0;
@@ -154,7 +166,8 @@ contract('Efher', function(accounts) {
 			it('should force the owner to remove a guarantor ', async function() {
 				const { logs } = await token.createLoan(loanTotalAmount, loanMaxInterestRate, loanNbPayments, loanPaymentType, {from: borrower});
 				const newLoanId = parseInt(logs[0].args.id);
-				await token.appendGuarantor(newLoanId, 5000, {from: guarantor});
+				const amount = 5000;
+				await token.appendGuarantor(newLoanId, amount, {from: guarantor, value: amount});
 
 				var guarantorsCount = 0;
 				var currentGuarantorsCount = 0;
@@ -171,9 +184,12 @@ contract('Efher', function(accounts) {
 		});
 
 		describe('check guarantor on loan', async function () {
-
-			before(async function() {
-				await token.appendGuarantor(loanId, 5000, {from: guarantor})
+			beforeEach(async function() {
+				const isGuarantorOnLoan = await token.isGuarantorEngaged(loanId, guarantor);
+				if (isGuarantorOnLoan == false) {
+					const amount = 5000;
+					await token.appendGuarantor(loanId, amount, {from: guarantor, value: amount});
+				}
 			});
 
 			it('should validate that the guarantor is on the loan', async function() {
@@ -190,16 +206,21 @@ contract('Efher', function(accounts) {
 
 
 		describe('replace', async function () {
-
-			before(async function() {
-				await token.addAddressToWhitelist(otherGuarantor, {from: owner});
-				await token.appendGuarantor(loanId, 5000, {from: guarantor})
+			
+			beforeEach(async function() {
+				const isGuarantorOnLoan = await token.isGuarantorEngaged(loanId, guarantor);
+				if (isGuarantorOnLoan) {
+					await token.removeGuarantor(loanId, {from: guarantor});
+				}
 			});
+			
 
 			it('should replace a guarantor ', async function() {
+				const amount = 50;
+				await token.appendGuarantor(loanId, amount, {from: guarantor, value: amount})
 				var isGuarantorOnLoan = await token.isGuarantorEngaged(loanId, guarantor);
 				assert.isTrue(isGuarantorOnLoan);
-				await token.replaceGuarantor(loanId, guarantor, {from: otherGuarantor});
+				await token.replaceGuarantor(loanId, guarantor, amount, {from: otherGuarantor, value: amount});
 				isGuarantorOnLoan = await token.isGuarantorEngaged(loanId, guarantor);
 				assert.isFalse(isGuarantorOnLoan);
 				isGuarantorOnLoan = await token.isGuarantorEngaged(loanId, otherGuarantor);

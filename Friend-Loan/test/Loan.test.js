@@ -149,19 +149,19 @@ contract('Efher', function(accounts) {
 			});
 			
 			async function startLoan(token, key, from) {
-				var isLoanStarted = false;
+				var isLoanStarted = 0;
 				try {
 					await token.startLoan(key, { from });
-					isLoanStarted = await token.isStarted(key);
-				} catch (error) { isLoanStarted = false; }
+					isLoanStarted = await token.loanStatus(key);
+				} catch (error) { isLoanStarted = 0; }
 				finally {
-					return isLoanStarted;
+					return parseInt(isLoanStarted) == 2;
 				}
 			}
 			
 			it('should start the loan', async function () {
-				await token.appendGuarantor(loanId, loanTotalAmount, {from: guarantor});
-				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne});
+				await token.appendGuarantor(loanId, loanTotalAmount, {from: guarantor, value: loanTotalAmount});
+				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne, value: loanTotalAmount});
 				await token.approveLender(loanId, lenderOne, {from: borrower});
 				const isLoanStarted = await startLoan(token, loanId, borrower);
 				assert.isTrue(isLoanStarted);
@@ -173,8 +173,8 @@ contract('Efher', function(accounts) {
 			});
 
 			it('should not restart an already started loan', async function() {
-				await token.appendGuarantor(loanId, loanTotalAmount, {from: guarantor});
-				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne});
+				await token.appendGuarantor(loanId, loanTotalAmount, {from: guarantor, value: loanTotalAmount});
+				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne, value: loanTotalAmount});
 				await token.approveLender(loanId, lenderOne, {from: borrower});
 				const isLoanStarted = await startLoan(token, loanId, borrower);
 				assert.isTrue(isLoanStarted);
@@ -191,22 +191,22 @@ contract('Efher', function(accounts) {
 			});
 
 			it('should not start a loan with a lend amount equal to zero', async function() {
-				await token.appendGuarantor(loanId, loanTotalAmount, {from: guarantor});
+				await token.appendGuarantor(loanId, loanTotalAmount, {from: guarantor, value: loanTotalAmount});
 				const isLoanStarted = await startLoan(token, loanId, borrower);
 				assert.isFalse(isLoanStarted);
 			});
 
 			it('should not start a loan without the complete lend amount', async function() {
-				await token.appendGuarantor(loanId, loanTotalAmount, {from: guarantor});
-				await token.appendLender(loanId, loanTotalAmount - 10, loanMaxInterestRate, {from: lenderOne});
+				await token.appendGuarantor(loanId, loanTotalAmount, {from: guarantor, value: loanTotalAmount});
+				await token.appendLender(loanId, loanTotalAmount - 10, loanMaxInterestRate, {from: lenderOne, value: loanTotalAmount - 10});
 				await token.approveLender(loanId, lenderOne, {from: borrower});
 				const isLoanStarted = await startLoan(token, loanId, borrower);
 				assert.isFalse(isLoanStarted);
 			});
 
 			it('should not start a loan when the sender is not the borrower', async function() {
-				await token.appendGuarantor(loanId, loanTotalAmount, {from: guarantor});
-				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne});
+				await token.appendGuarantor(loanId, loanTotalAmount, {from: guarantor, value: loanTotalAmount});
+				await token.appendLender(loanId, loanTotalAmount, loanMaxInterestRate, {from: lenderOne, value: loanTotalAmount});
 				await token.approveLender(loanId, lenderOne, {from: borrower});
 				var isLoanStarted = await startLoan(token, loanId, lenderOne);
 				assert.isFalse(isLoanStarted);
